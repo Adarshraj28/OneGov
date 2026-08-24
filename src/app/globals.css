@@ -46,6 +46,12 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  /* Indian Tricolor */
+  --color-tricolor-saffron: #FF9933;
+  --color-tricolor-white: #FFFFFF;
+  --color-tricolor-green: #138808;
+  --color-tricolor-navy: #000080;
+  --color-india-blue: #000080;
 }
 
 :root {
@@ -126,5 +132,39 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/* Indian Tricolor Utility Classes */
+@layer utilities {
+  .tricolor-bar {
+    @apply flex h-1.5;
+  }
+  .tricolor-bar > div:nth-child(1) {
+    @apply flex-1 bg-[#FF9933];
+  }
+  .tricolor-bar > div:nth-child(2) {
+    @apply flex-1 bg-white;
+  }
+  .tricolor-bar > div:nth-child(3) {
+    @apply flex-1 bg-[#138808];
+  }
+  .text-saffron {
+    color: #FF9933;
+  }
+  .bg-saffron {
+    background-color: #FF9933;
+  }
+  .text-india-green {
+    color: #138808;
+  }
+  .bg-india-green {
+    background-color: #138808;
+  }
+  .text-india-navy {
+    color: #000080;
+  }
+  .bg-india-navy {
+    background-color: #000080;
   }
 }

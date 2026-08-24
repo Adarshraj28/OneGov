@@ -87,6 +87,12 @@ export default function Header() {
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      {/* Tricolor top accent */}
+      <div className="flex h-0.5">
+        <div className="flex-1 bg-[#FF9933]" />
+        <div className="flex-1 bg-white" />
+        <div className="flex-1 bg-[#138808]" />
+      </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo */}
@@ -95,11 +101,13 @@ export default function Header() {
               href={user.role === "admin" ? "/admin" : user.role === "officer" ? "/officer" : "/citizen"}
               className="flex items-center gap-2"
             >
-              <div className="w-8 h-8 bg-blue-900 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">OG</span>
+              <div className="w-8 h-8 bg-gradient-to-br from-[#FF9933] via-white to-[#138808] rounded-lg p-0.5">
+                <div className="w-full h-full bg-blue-900 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">OG</span>
+                </div>
               </div>
               <span className="text-xl font-bold text-gray-900">
-                ONE<span className="text-blue-900">GOV</span>
+                ONE<span className="text-[#FF9933]">GOV</span>
               </span>
             </Link>
 
@@ -117,7 +125,7 @@ export default function Header() {
                     className={cn(
                       "flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors",
                       isActive
-                        ? "bg-blue-50 text-blue-900"
+                        ? "bg-[#FF9933]/10 text-[#FF9933]"
                         : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                     )}
                   >
@@ -134,18 +142,18 @@ export default function Header() {
             {/* Notifications */}
             <Link
               href="/citizen/notifications"
-              className="relative p-2 text-gray-500 hover:text-gray-700 rounded-md hover:bg-gray-50"
+              className="relative p-2 text-gray-500 hover:text-[#FF9933] rounded-md hover:bg-[#FF9933]/10"
             >
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 bg-[#FF9933] text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
             </Link>
 
             {/* Role Badge */}
-            <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-800">
+            <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#FF9933]/10 text-[#FF9933]">
               {user.role === "admin" ? "Admin" : user.role === "officer" ? "Officer" : "Citizen"}
             </span>
 
@@ -155,8 +163,8 @@ export default function Header() {
                 onClick={() => setProfileOpen(!profileOpen)}
                 className="flex items-center gap-2 p-1.5 rounded-md hover:bg-gray-50"
               >
-                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                  <User className="w-4 h-4 text-gray-600" />
+                <div className="w-8 h-8 bg-gradient-to-br from-[#FF9933] to-[#138808] rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-white" />
                 </div>
                 <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[120px] truncate">
                   {user.name}
@@ -199,7 +207,7 @@ export default function Header() {
 
             {/* Mobile Menu Toggle */}
             <button
-              className="md:hidden p-2 text-gray-500 hover:text-gray-700"
+              className="md:hidden p-2 text-gray-500 hover:text-[#FF9933]"
               onClick={() => setMobileOpen(!mobileOpen)}
             >
               {mobileOpen ? (
@@ -226,7 +234,7 @@ export default function Header() {
                   className={cn(
                     "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium",
                     isActive
-                      ? "bg-blue-50 text-blue-900"
+                      ? "bg-[#FF9933]/10 text-[#FF9933]"
                       : "text-gray-600 hover:bg-gray-50"
                   )}
                   onClick={() => setMobileOpen(false)}

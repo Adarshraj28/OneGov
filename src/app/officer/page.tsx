@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/header";
+import PMModiBanner from "@/components/pm-modi-banner";
 import {
   FileText,
   Clock,
@@ -65,7 +66,7 @@ export default function OfficerDashboard() {
       <div className="min-h-screen bg-gray-50">
         <Header />
         <div className="flex justify-center py-20">
-          <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+          <Loader2 className="w-6 h-6 text-[#FF9933] animate-spin" />
         </div>
       </div>
     );
@@ -75,8 +76,10 @@ export default function OfficerDashboard() {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Officer Dashboard
+        <PMModiBanner variant="compact" />
+
+        <h1 className="text-2xl font-bold text-gray-900 mb-2 mt-6">
+          Officer Dashboard 🇮🇳
         </h1>
         <p className="text-sm text-gray-500 mb-6">
           Monitor and manage citizen service applications
@@ -86,8 +89,8 @@ export default function OfficerDashboard() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                <FileText className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 bg-[#FF9933]/10 rounded-lg flex items-center justify-center">
+                <FileText className="w-5 h-5 text-[#FF9933]" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
@@ -97,8 +100,8 @@ export default function OfficerDashboard() {
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
+              <div className="w-10 h-10 bg-[#138808]/10 rounded-lg flex items-center justify-center">
+                <CheckCircle2 className="w-5 h-5 text-[#138808]" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{stats.completed}</p>
@@ -108,8 +111,8 @@ export default function OfficerDashboard() {
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
-                <Clock className="w-5 h-5 text-amber-600" />
+              <div className="w-10 h-10 bg-[#FF9933]/10 rounded-lg flex items-center justify-center">
+                <Clock className="w-5 h-5 text-[#FF9933]" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{stats.inProgress}</p>
@@ -184,7 +187,7 @@ export default function OfficerDashboard() {
                       <div className="flex items-center gap-2">
                         <div className="w-20 bg-gray-200 rounded-full h-2">
                           <div
-                            className="bg-blue-600 h-2 rounded-full"
+                            className="bg-gradient-to-r from-[#FF9933] to-[#138808] h-2 rounded-full"
                             style={{ width: `${j.progress}%` }}
                           />
                         </div>
@@ -195,9 +198,9 @@ export default function OfficerDashboard() {
                       <span
                         className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                           j.status === "completed"
-                            ? "bg-green-50 text-green-700"
+                            ? "bg-[#138808]/10 text-[#138808]"
                             : j.status === "in_progress"
-                              ? "bg-blue-50 text-blue-700"
+                              ? "bg-[#FF9933]/10 text-[#FF9933]"
                               : j.status === "failed"
                                 ? "bg-red-50 text-red-700"
                                 : "bg-gray-50 text-gray-700"

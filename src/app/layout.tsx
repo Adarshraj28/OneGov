@@ -10,9 +10,10 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "ONEGOV — Government Services, Connected Around You",
+  title: "ONEGOV — Government Services, Connected Around You | Digital India",
   description:
-    "One Request. Multiple Services. One Unified Journey. ONEGOV is an intelligent government-service orchestration platform.",
+    "ONEGOV is India's unified government-service orchestration platform. One Request. Multiple Services. One Unified Journey. Digital India Initiative.",
+  keywords: ["Digital India", "Government Services", "ONEGOV", "Aadhaar", "PAN", "Passport", "Driving License", "Voter ID"],
 };
 
 export default function RootLayout({

@@ -1,0 +1,135 @@
+"use client";
+
+import { Shield } from "lucide-react";
+
+interface PMModiBannerProps {
+  variant?: "full" | "compact" | "hero";
+}
+
+export default function PMModiBanner({ variant = "full" }: PMModiBannerProps) {
+  if (variant === "hero") {
+    return (
+      <div className="relative overflow-hidden rounded-2xl border border-gray-200 shadow-lg">
+        {/* Tricolor top bar */}
+        <div className="flex h-1.5">
+          <div className="flex-1 bg-[#FF9933]" />
+          <div className="flex-1 bg-white" />
+          <div className="flex-1 bg-[#138808]" />
+        </div>
+
+        <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            {/* PM Modi Image Placeholder */}
+            <div className="relative shrink-0">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-[#FF9933] via-white to-[#138808] p-1">
+                <div className="w-full h-full rounded-full bg-blue-900 flex items-center justify-center overflow-hidden">
+                  <div className="text-center">
+                    <Shield className="w-10 h-10 text-white mx-auto" />
+                    <span className="text-[10px] text-white/80 block mt-1">PM Office</span>
+                  </div>
+                </div>
+              </div>
+              {/* Indian flag badge */}
+              <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-white border-2 border-white shadow flex items-center justify-center">
+                <span className="text-xs">🇮🇳</span>
+              </div>
+            </div>
+
+            <div className="text-center sm:text-left">
+              <p className="text-[#FF9933] font-semibold text-sm tracking-wide uppercase mb-1">
+                Digital India Initiative
+              </p>
+              <h2 className="text-white text-xl sm:text-2xl font-bold leading-tight mb-2">
+                &quot;Minimum Government, Maximum Governance&quot;
+              </h2>
+              <p className="text-blue-200 text-sm sm:text-base leading-relaxed">
+                ONEGOV — Bringing all government services to your fingertips.
+                One request, multiple services, one unified journey.
+              </p>
+              <div className="flex flex-wrap gap-2 mt-3 justify-center sm:justify-start">
+                <span className="px-3 py-1 bg-[#FF9933]/20 text-[#FF9933] text-xs rounded-full font-medium">
+                  🇮🇳 Make in India
+                </span>
+                <span className="px-3 py-1 bg-[#138808]/20 text-[#138808] text-xs rounded-full font-medium">
+                  📱 Digital India
+                </span>
+                <span className="px-3 py-1 bg-white/20 text-white text-xs rounded-full font-medium">
+                  🏛️ Citizen First
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tricolor bottom bar */}
+        <div className="flex h-1">
+          <div className="flex-1 bg-[#FF9933]" />
+          <div className="flex-1 bg-white" />
+          <div className="flex-1 bg-[#138808]" />
+        </div>
+      </div>
+    );
+  }
+
+  if (variant === "compact") {
+    return (
+      <div className="bg-gradient-to-r from-blue-900 to-blue-800 rounded-xl p-4 border border-blue-700">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FF9933] via-white to-[#138808] p-0.5 shrink-0">
+            <div className="w-full h-full rounded-full bg-blue-900 flex items-center justify-center">
+              <Shield className="w-5 h-5 text-white" />
+            </div>
+          </div>
+          <div>
+            <p className="text-white font-semibold text-sm">
+              &quot;Minimum Government, Maximum Governance&quot;
+            </p>
+            <p className="text-blue-200 text-xs">
+              ONEGOV — Digital India Initiative
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Full variant (default)
+  return (
+    <div className="relative overflow-hidden rounded-xl border border-gray-200">
+      {/* Tricolor top bar */}
+      <div className="flex h-1">
+        <div className="flex-1 bg-[#FF9933]" />
+        <div className="flex-1 bg-white" />
+        <div className="flex-1 bg-[#138808]" />
+      </div>
+
+      <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 p-5">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#FF9933] via-white to-[#138808] p-0.5 shrink-0">
+            <div className="w-full h-full rounded-full bg-blue-900 flex items-center justify-center">
+              <Shield className="w-8 h-8 text-white" />
+            </div>
+          </div>
+          <div>
+            <p className="text-[#FF9933] text-xs font-semibold uppercase tracking-wide">
+              Digital India Initiative
+            </p>
+            <h3 className="text-white text-lg font-bold">
+              &quot;Minimum Government, Maximum Governance&quot;
+            </h3>
+            <p className="text-blue-200 text-sm mt-1">
+              ONEGOV — Your unified gateway to all government services
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Tricolor bottom bar */}
+      <div className="flex h-1">
+        <div className="flex-1 bg-[#FF9933]" />
+        <div className="flex-1 bg-white" />
+        <div className="flex-1 bg-[#138808]" />
+      </div>
+    </div>
+  );
+}

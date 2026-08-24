@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/header";
+import PMModiBanner from "@/components/pm-modi-banner";
 import {
   ArrowRight,
   FileText,
@@ -10,13 +11,19 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  Building2,
-  Landmark,
-  Utensils,
-  Flame,
-  Receipt,
   Search,
+  Fingerprint,
+  CreditCard,
+  BookOpen,
+  Car,
+  Vote,
+  Baby,
+  IndianRupee,
+  Home,
+  UtensilsCrossed,
+  ScrollText,
 } from "lucide-react";
+import { OFFICIAL_GOV_SERVICES } from "@/lib/mock-data";
 
 const PROCESSING_STEPS = [
   "Understanding your request...",
@@ -35,6 +42,19 @@ interface Journey {
   createdAt: string;
   steps: { status: string }[];
 }
+
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Fingerprint,
+  CreditCard,
+  BookOpen,
+  Car,
+  Vote,
+  Baby,
+  IndianRupee,
+  Home,
+  UtensilsCrossed,
+  ScrollText,
+};
 
 export default function CitizenHome() {
   const router = useRouter();
@@ -104,18 +124,20 @@ export default function CitizenHome() {
   };
 
   const quickRequests = [
+    "I want to apply for a passport",
+    "I need to update my Aadhaar card",
     "I want to open a restaurant in Pune",
-    "I want to start a business in Mumbai",
-    "I need to register a property",
-    "I want to apply for a government scheme",
+    "I need a driving license",
+    "I want to register a property",
+    "I need a birth certificate",
   ];
 
   const statusIcon = (status: string) => {
     switch (status) {
       case "completed":
-        return <CheckCircle2 className="w-4 h-4 text-green-600" />;
+        return <CheckCircle2 className="w-4 h-4 text-[#138808]" />;
       case "in_progress":
-        return <Clock className="w-4 h-4 text-blue-600" />;
+        return <Clock className="w-4 h-4 text-[#FF9933]" />;
       case "failed":
         return <AlertCircle className="w-4 h-4 text-red-600" />;
       default:
@@ -128,8 +150,11 @@ export default function CitizenHome() {
       <Header />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* PM Modi Hero Banner */}
+        <PMModiBanner variant="hero" />
+
         {/* Hero Section */}
-        <div className="text-center mb-10">
+        <div className="text-center mt-10 mb-10">
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
             Government services, connected around you.
           </h1>
@@ -137,6 +162,11 @@ export default function CitizenHome() {
             Tell us what you need. ONEGOV discovers the required services and
             guides you through one unified journey.
           </p>
+          <div className="flex justify-center gap-1 mt-4">
+            <span className="w-8 h-1 rounded-full bg-[#FF9933]" />
+            <span className="w-8 h-1 rounded-full bg-gray-300" />
+            <span className="w-8 h-1 rounded-full bg-[#138808]" />
+          </div>
         </div>
 
         {/* AI Request Box */}
@@ -153,15 +183,15 @@ export default function CitizenHome() {
                     type="text"
                     value={request}
                     onChange={(e) => setRequest(e.target.value)}
-                    placeholder='e.g., "I want to open a restaurant in Pune"'
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder='e.g., "I want to apply for a passport"'
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#FF9933] focus:border-[#FF9933]"
                     disabled={processing}
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={processing || !request.trim()}
-                  className="px-6 py-3 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800 transition-colors disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-3 bg-gradient-to-r from-[#FF9933] to-[#e88a2d] text-white rounded-lg font-medium hover:from-[#e88a2d] hover:to-[#FF9933] transition-all disabled:opacity-50 flex items-center gap-2 shadow-md"
                 >
                   {processing ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -182,7 +212,7 @@ export default function CitizenHome() {
                       key={q}
                       type="button"
                       onClick={() => setRequest(q)}
-                      className="text-xs px-3 py-1.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-colors"
+                      className="text-xs px-3 py-1.5 bg-gray-100 text-gray-600 rounded-full hover:bg-[#FF9933]/10 hover:text-[#FF9933] transition-colors"
                     >
                       {q}
                     </button>
@@ -199,18 +229,18 @@ export default function CitizenHome() {
                 {PROCESSING_STEPS.map((step, i) => (
                   <div key={i} className="flex items-center gap-3">
                     {processDone.includes(i) ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
+                      <CheckCircle2 className="w-5 h-5 text-[#138808] shrink-0" />
                     ) : processStep === i ? (
-                      <Loader2 className="w-5 h-5 text-blue-600 animate-spin shrink-0" />
+                      <Loader2 className="w-5 h-5 text-[#FF9933] animate-spin shrink-0" />
                     ) : (
                       <div className="w-5 h-5 rounded-full border-2 border-gray-200 shrink-0" />
                     )}
                     <span
                       className={`text-sm ${
                         processDone.includes(i)
-                          ? "text-green-700"
+                          ? "text-[#138808]"
                           : processStep === i
-                            ? "text-blue-700 font-medium"
+                            ? "text-[#FF9933] font-medium"
                             : "text-gray-400"
                       }`}
                     >
@@ -227,8 +257,8 @@ export default function CitizenHome() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                <FileText className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 bg-[#FF9933]/10 rounded-lg flex items-center justify-center">
+                <FileText className="w-5 h-5 text-[#FF9933]" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
@@ -238,8 +268,8 @@ export default function CitizenHome() {
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
+              <div className="w-10 h-10 bg-[#138808]/10 rounded-lg flex items-center justify-center">
+                <CheckCircle2 className="w-5 h-5 text-[#138808]" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{stats.completed}</p>
@@ -249,8 +279,8 @@ export default function CitizenHome() {
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
-                <Clock className="w-5 h-5 text-amber-600" />
+              <div className="w-10 h-10 bg-[#FF9933]/10 rounded-lg flex items-center justify-center">
+                <Clock className="w-5 h-5 text-[#FF9933]" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{stats.inProgress}</p>
@@ -260,7 +290,7 @@ export default function CitizenHome() {
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
                 <AlertCircle className="w-5 h-5 text-gray-600" />
               </div>
               <div>
@@ -280,7 +310,7 @@ export default function CitizenHome() {
               </h2>
               <button
                 onClick={() => router.push("/citizen/journey")}
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                className="text-sm text-[#FF9933] hover:text-[#e88a2d] font-medium"
               >
                 View All →
               </button>
@@ -290,7 +320,7 @@ export default function CitizenHome() {
                 <button
                   key={journey.id}
                   onClick={() => router.push(`/citizen/journey/${journey.id}`)}
-                  className="w-full flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors text-left"
+                  className="w-full flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-[#FF9933] hover:bg-[#FF9933]/5 transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">
                     {statusIcon(journey.status)}
@@ -307,7 +337,7 @@ export default function CitizenHome() {
                   <div className="flex items-center gap-3">
                     <div className="w-24 bg-gray-200 rounded-full h-2">
                       <div
-                        className="bg-blue-600 h-2 rounded-full transition-all"
+                        className="bg-gradient-to-r from-[#FF9933] to-[#138808] h-2 rounded-full transition-all"
                         style={{ width: `${journey.progress}%` }}
                       />
                     </div>
@@ -321,36 +351,56 @@ export default function CitizenHome() {
           </div>
         )}
 
-        {/* Service Categories */}
+        {/* Official Government Services Grid */}
         <div className="mt-10">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Integrated Government Services
-          </h2>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Official Government Services
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Integrated services from departments across India 🇮🇳
+              </p>
+            </div>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {[
-              { icon: Building2, name: "Business Registration", dept: "MCA", color: "blue" },
-              { icon: Receipt, name: "Tax Registration", dept: "ITD", color: "purple" },
-              { icon: Utensils, name: "Food License", dept: "FSSAI", color: "green" },
-              { icon: Landmark, name: "Municipal Services", dept: "Municipal", color: "cyan" },
-              { icon: Flame, name: "Fire Safety", dept: "Fire Dept", color: "red" },
-            ].map((cat) => {
-              const Icon = cat.icon;
+            {OFFICIAL_GOV_SERVICES.map((service) => {
+              const Icon = ICON_MAP[service.icon] || FileText;
               return (
                 <div
-                  key={cat.name}
-                  className="bg-white rounded-xl border border-gray-200 p-4 text-center hover:shadow-md transition-shadow"
+                  key={service.name}
+                  className="bg-white rounded-xl border border-gray-200 p-4 text-center hover:shadow-md hover:border-[#FF9933]/50 transition-all cursor-pointer group"
                 >
                   <div
-                    className={`w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center bg-${cat.color}-50`}
+                    className={`w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center bg-${service.color}-50 group-hover:scale-110 transition-transform`}
                   >
-                    <Icon className={`w-6 h-6 text-${cat.color}-600`} />
+                    <Icon className={`w-6 h-6 text-${service.color}-600`} />
                   </div>
-                  <p className="text-sm font-medium text-gray-900">{cat.name}</p>
-                  <p className="text-xs text-gray-500 mt-1">{cat.dept}</p>
+                  <p className="text-sm font-medium text-gray-900">{service.name}</p>
+                  <p className="text-xs text-gray-500 mt-1">{service.department}</p>
+                  <p className="text-[10px] text-gray-400 mt-2 leading-tight">{service.description}</p>
                 </div>
               );
             })}
           </div>
+        </div>
+
+        {/* Government of India Footer Banner */}
+        <div className="mt-10 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 rounded-xl p-6 text-center">
+          <div className="flex justify-center gap-1 mb-3">
+            <span className="w-12 h-1 rounded-full bg-[#FF9933]" />
+            <span className="w-12 h-1 rounded-full bg-white" />
+            <span className="w-12 h-1 rounded-full bg-[#138808]" />
+          </div>
+          <p className="text-white font-semibold text-lg">
+            🇮🇳 Government of India — Digital India Initiative
+          </p>
+          <p className="text-blue-200 text-sm mt-2">
+            ONEGOV is a prototype for Smart India Hackathon 2026
+          </p>
+          <p className="text-blue-300 text-xs mt-1">
+            Problem Statement SIH26129 — Government of Maharashtra
+          </p>
         </div>
       </main>
     </div>
