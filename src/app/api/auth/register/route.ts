@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { hashPassword, createToken, setAuthCookie } from "@/lib/auth";
+import { MOCK_USERS } from "@/lib/mock-data";
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password, phone } = await request.json();
+    const { name, email, password } = await request.json();
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -13,51 +12,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
+    if (MOCK_USERS[email]) {
       return NextResponse.json(
         { error: "Email already registered" },
         { status: 409 }
       );
     }
 
-    const passwordHash = await hashPassword(password);
+    // Create token
+    const { SignJWT } = await import("jose");
+    const JWT_SECRET = new TextEncoder().encode(
+      process.env.JWT_SECRET || "onegov-secret-key-prototype-2026"
+    );
 
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        passwordHash,
-        phone,
-        role: "citizen",
-      },
+    const userId = `citizen-${Date.now()}`;
+
+    const token = await new SignJWT({
+      userId,
+      email,
+      role: "citizen",
+      name,
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setIssuedAt()
+      .setExpirationTime("24h")
+      .sign(JWT_SECRET);
+
+    const { cookies } = await import("next/headers");
+    const cookieStore = await cookies();
+    cookieStore.set("onegov-token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24,
     });
-
-    // Create empty profile
-    await prisma.citizenProfile.create({
-      data: {
-        userId: user.id,
-        state: "Maharashtra",
-      },
-    });
-
-    const token = await createToken({
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-      name: user.name,
-    });
-
-    await setAuthCookie(token);
 
     return NextResponse.json({
       success: true,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      user: { id: userId, name, email, role: "citizen" },
     });
   } catch (error) {
     console.error("Register error:", error);

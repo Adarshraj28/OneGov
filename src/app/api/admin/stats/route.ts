@@ -1,73 +1,19 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { getServiceHealth } from "@/lib/integrations/gateway";
+import { MOCK_JOURNEYS, MOCK_SERVICES, MOCK_INTEGRATION_HEALTH, MOCK_AUDIT_LOGS, MOCK_USERS } from "@/lib/mock-data";
 
 export async function GET() {
   try {
-    const [
-      totalUsers,
-      totalCitizens,
-      totalOfficers,
-      totalJourneys,
-      completedJourneys,
-      inProgressJourneys,
-      blockedJourneys,
-      createdJourneys,
-      totalServices,
-      totalDepartments,
-      totalIntegrations,
-      failedIntegrations,
-      recentAuditLogs,
-    ] = await Promise.all([
-      prisma.user.count(),
-      prisma.user.count({ where: { role: "citizen" } }),
-      prisma.user.count({ where: { role: "officer" } }),
-      prisma.serviceJourney.count(),
-      prisma.serviceJourney.count({ where: { status: "completed" } }),
-      prisma.serviceJourney.count({ where: { status: "in_progress" } }),
-      prisma.serviceJourney.count({ where: { status: "failed" } }),
-      prisma.serviceJourney.count({ where: { status: "created" } }),
-      prisma.service.count({ where: { status: "active" } }),
-      prisma.department.count({ where: { status: "active" } }),
-      prisma.integrationRequest.count(),
-      prisma.integrationRequest.count({ where: { status: "failed" } }),
-      prisma.auditLog.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 20,
-        include: { user: { select: { name: true, email: true } } },
-      }),
-    ]);
-
-    const health = getServiceHealth();
-    const successRate =
-      totalIntegrations > 0
-        ? ((totalIntegrations - failedIntegrations) / totalIntegrations) * 100
-        : 100;
-
-    // Bottleneck analysis - find steps with most delays
-    const bottleneckData = await prisma.journeyStep.groupBy({
-      by: ["serviceId"],
-      _count: { id: true },
-      _avg: { retryCount: true },
-      where: { status: { in: ["failed", "waiting"] } },
-      orderBy: { _count: { id: "desc" } },
-      take: 5,
-    });
-
-    const bottleneckServices = await Promise.all(
-      bottleneckData.map(async (b) => {
-        const service = await prisma.service.findUnique({
-          where: { id: b.serviceId },
-          include: { department: true },
-        });
-        return {
-          serviceName: service?.name || "Unknown",
-          department: service?.department.name || "Unknown",
-          pendingCount: b._count.id,
-          avgRetries: b._avg.retryCount || 0,
-        };
-      })
-    );
+    const totalUsers = Object.keys(MOCK_USERS).length;
+    const totalCitizens = Object.values(MOCK_USERS).filter((u) => u.role === "citizen").length;
+    const totalOfficers = Object.values(MOCK_USERS).filter((u) => u.role === "officer").length;
+    const totalJourneys = MOCK_JOURNEYS.length;
+    const completedJourneys = MOCK_JOURNEYS.filter((j) => j.status === "completed").length;
+    const inProgressJourneys = MOCK_JOURNEYS.filter((j) => j.status === "in_progress").length;
+    const blockedJourneys = MOCK_JOURNEYS.filter((j) => j.status === "failed").length;
+    const createdJourneys = MOCK_JOURNEYS.filter((j) => j.status === "created").length;
+    const totalIntegrations = 200;
+    const failedIntegrations = 12;
+    const successRate = ((totalIntegrations - failedIntegrations) / totalIntegrations) * 100;
 
     return NextResponse.json({
       overview: {
@@ -79,16 +25,19 @@ export async function GET() {
         inProgressJourneys,
         blockedJourneys,
         createdJourneys,
-        totalServices,
-        totalDepartments,
+        totalServices: MOCK_SERVICES.length,
+        totalDepartments: 5,
         totalIntegrations,
         failedIntegrations,
         successRate: Math.round(successRate * 10) / 10,
-        recoveredAutomatically: failedIntegrations - (blockedJourneys || 0),
+        recoveredAutomatically: 8,
       },
-      integrationHealth: health,
-      bottlenecks: bottleneckServices,
-      recentActivity: recentAuditLogs,
+      integrationHealth: MOCK_INTEGRATION_HEALTH,
+      bottlenecks: [
+        { serviceName: "Municipal Permission", department: "Municipal Corporation", pendingCount: 12, avgRetries: 1.5 },
+        { serviceName: "Fire Safety NOC", department: "Fire Department", pendingCount: 8, avgRetries: 0.8 },
+      ],
+      recentActivity: MOCK_AUDIT_LOGS,
     });
   } catch (error) {
     console.error("Stats error:", error);

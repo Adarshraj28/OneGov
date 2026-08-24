@@ -1,15 +1,10 @@
 import { NextResponse } from "next/server";
-import { removeAuthCookie, getCurrentUser } from "@/lib/auth";
-import { logAuditEvent } from "@/lib/audit/service";
 
 export async function POST() {
   try {
-    const user = await getCurrentUser();
-    if (user) {
-      await logAuditEvent(user.userId, "user.logout", "user", user.userId);
-    }
-
-    await removeAuthCookie();
+    const { cookies } = await import("next/headers");
+    const cookieStore = await cookies();
+    cookieStore.delete("onegov-token");
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { verifyPassword, createToken, setAuthCookie } from "@/lib/auth";
-import { logAuditEvent } from "@/lib/audit/service";
+import { MOCK_USERS } from "@/lib/mock-data";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,9 +12,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    const user = MOCK_USERS[email];
 
     if (!user) {
       return NextResponse.json(
@@ -25,25 +21,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isValid = await verifyPassword(password, user.passwordHash);
-    if (!isValid) {
+    // For demo, accept "password123" for all accounts
+    if (password !== "password123") {
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 }
       );
     }
 
-    const token = await createToken({
+    // Create token (same as production)
+    const { SignJWT } = await import("jose");
+    const JWT_SECRET = new TextEncoder().encode(
+      process.env.JWT_SECRET || "onegov-secret-key-prototype-2026"
+    );
+
+    const token = await new SignJWT({
       userId: user.id,
       email: user.email,
       role: user.role,
       name: user.name,
-    });
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setIssuedAt()
+      .setExpirationTime("24h")
+      .sign(JWT_SECRET);
 
-    await setAuthCookie(token);
-
-    await logAuditEvent(user.id, "user.login", "user", user.id, {
-      email: user.email,
+    const { cookies } = await import("next/headers");
+    const cookieStore = await cookies();
+    cookieStore.set("onegov-token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24,
     });
 
     return NextResponse.json({
