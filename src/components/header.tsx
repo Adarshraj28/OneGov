@@ -17,6 +17,7 @@ import {
   ChevronDown,
   LayoutDashboard,
   Activity,
+  Link2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/language-context";
@@ -73,6 +74,7 @@ export default function Header() {
 
   const adminLinks = [
     { href: "/admin", label: t.dashboard, icon: LayoutDashboard },
+    { href: "/admin/interoperability", label: "🔗 Framework", icon: Link2 },
     { href: "/admin/journeys", label: "All Journeys", icon: FileText },
     { href: "/admin/services", label: t.services, icon: Settings },
     { href: "/admin/simulation", label: "Simulation", icon: Activity },
