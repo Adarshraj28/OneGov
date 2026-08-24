@@ -12,11 +12,10 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
-  TrendingUp,
-  Shield,
   Loader2,
   Zap,
 } from "lucide-react";
+import { useLanguage } from "@/lib/language-context";
 
 interface Stats {
   overview: {
@@ -59,6 +58,7 @@ interface Stats {
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -103,14 +103,14 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between mb-6 mt-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Admin Dashboard 🇮🇳
+              {t.adminDashboard} 🇮🇳
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              ONEGOV Platform Overview — Digital India
+              {t.adminSubtitle}
             </p>
           </div>
           <span className="text-xs bg-[#FF9933]/10 text-[#FF9933] border border-[#FF9933]/20 px-3 py-1 rounded-full font-medium">
-            🇮🇳 Prototype Simulation Metrics
+            🇮🇳 {t.simulationMetrics}
           </span>
         </div>
 
@@ -125,7 +125,7 @@ export default function AdminDashboard() {
                 <p className="text-2xl font-bold text-gray-900">
                   {o.totalJourneys.toLocaleString()}
                 </p>
-                <p className="text-xs text-gray-500">Total Journeys</p>
+                <p className="text-xs text-gray-500">{t.totalJourneys}</p>
               </div>
             </div>
           </div>
@@ -138,7 +138,7 @@ export default function AdminDashboard() {
                 <p className="text-2xl font-bold text-gray-900">
                   {o.completedJourneys.toLocaleString()}
                 </p>
-                <p className="text-xs text-gray-500">Completed</p>
+                <p className="text-xs text-gray-500">{t.completed}</p>
               </div>
             </div>
           </div>
@@ -151,7 +151,7 @@ export default function AdminDashboard() {
                 <p className="text-2xl font-bold text-gray-900">
                   {o.inProgressJourneys.toLocaleString()}
                 </p>
-                <p className="text-xs text-gray-500">In Progress</p>
+                <p className="text-xs text-gray-500">{t.inProgress}</p>
               </div>
             </div>
           </div>
@@ -164,7 +164,7 @@ export default function AdminDashboard() {
                 <p className="text-2xl font-bold text-gray-900">
                   {o.blockedJourneys.toLocaleString()}
                 </p>
-                <p className="text-xs text-gray-500">Blocked</p>
+                <p className="text-xs text-gray-500">{t.blocked}</p>
               </div>
             </div>
           </div>
@@ -179,7 +179,7 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{o.totalUsers}</p>
-                <p className="text-xs text-gray-500">Total Users</p>
+                <p className="text-xs text-gray-500">{t.totalUsers}</p>
               </div>
             </div>
           </div>
@@ -192,7 +192,7 @@ export default function AdminDashboard() {
                 <p className="text-2xl font-bold text-gray-900">
                   {o.totalDepartments}
                 </p>
-                <p className="text-xs text-gray-500">Departments</p>
+                <p className="text-xs text-gray-500">{t.departments}</p>
               </div>
             </div>
           </div>
@@ -205,7 +205,7 @@ export default function AdminDashboard() {
                 <p className="text-2xl font-bold text-gray-900">
                   {o.successRate}%
                 </p>
-                <p className="text-xs text-gray-500">Success Rate</p>
+                <p className="text-xs text-gray-500">{t.successRate}</p>
               </div>
             </div>
           </div>
@@ -218,7 +218,7 @@ export default function AdminDashboard() {
                 <p className="text-2xl font-bold text-gray-900">
                   {o.recoveredAutomatically}
                 </p>
-                <p className="text-xs text-gray-500">Auto Recovered</p>
+                <p className="text-xs text-gray-500">{t.autoRecovered}</p>
               </div>
             </div>
           </div>
@@ -228,7 +228,7 @@ export default function AdminDashboard() {
           {/* Integration Health */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              🏛️ Integration Health
+              🏛️ {t.integrationHealth}
             </h2>
             <div className="space-y-3">
               {stats.integrationHealth.map((h) => (
@@ -274,10 +274,10 @@ export default function AdminDashboard() {
           {/* Bottlenecks */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              ⚠️ Bottleneck Analysis
+              ⚠️ {t.bottleneckAnalysis}
             </h2>
             {stats.bottlenecks.length === 0 ? (
-              <p className="text-sm text-gray-500">No bottlenecks detected</p>
+              <p className="text-sm text-gray-500">{t.noBottlenecks}</p>
             ) : (
               <div className="space-y-3">
                 {stats.bottlenecks.map((b, i) => (
@@ -312,7 +312,7 @@ export default function AdminDashboard() {
           {/* Recent Activity */}
           <div className="bg-white rounded-xl border border-gray-200 p-6 md:col-span-2">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              📊 Recent Activity
+              📊 {t.recentActivity}
             </h2>
             <div className="space-y-2">
               {stats.recentActivity.slice(0, 10).map((log) => (
@@ -351,7 +351,7 @@ export default function AdminDashboard() {
             <span className="w-8 h-1 rounded-full bg-[#138808]" />
           </div>
           <p className="text-white text-sm font-medium">
-            🇮🇳 ONEGOV — Digital India Initiative — Government of Maharashtra
+            🇮🇳 {t.digitalIndiaFooter}
           </p>
         </div>
       </main>

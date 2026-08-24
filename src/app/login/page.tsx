@@ -4,16 +4,32 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Lock, Mail, Eye, EyeOff, Shield } from "lucide-react";
 import PMModiBanner from "@/components/pm-modi-banner";
+import LanguageSwitcher from "@/components/language-switcher";
+import { useLanguage } from "@/lib/language-context";
 
 const DEMO_ACCOUNTS = [
-  { email: "adarsh@citizen.gov", password: "password123", role: "Citizen", name: "Adarsh Raj" },
-  { email: "priya@citizen.gov", password: "password123", role: "Citizen", name: "Priya Sharma" },
-  { email: "rajesh@officer.gov", password: "password123", role: "Officer", name: "Dr. Rajesh Kulkarni" },
-  { email: "admin@onegov.gov", password: "password123", role: "Admin", name: "System Administrator" },
+  { email: "adarsh@citizen.gov", password: "password123", roleKey: "citizen" as const, name: "Adarsh Raj" },
+  { email: "priya@citizen.gov", password: "password123", roleKey: "citizen" as const, name: "Priya Sharma" },
+  { email: "rajesh@officer.gov", password: "password123", roleKey: "officer" as const, name: "Dr. Rajesh Kulkarni" },
+  { email: "admin@onegov.gov", password: "password123", roleKey: "admin" as const, name: "System Administrator" },
 ];
+
+const ROLE_LABELS: Record<string, Record<string, string>> = {
+  en: { citizen: "Citizen", officer: "Officer", admin: "Admin" },
+  hi: { citizen: "नागरिक", officer: "अधिकारी", admin: "प्रशासक" },
+  mr: { citizen: "नागरिक", officer: "अधिकारी", admin: "प्रशासक" },
+  ta: { citizen: "குடிமகன்", officer: "அதிகாரி", admin: "நிர்வாகி" },
+  te: { citizen: "పౌరుడు", officer: "అధికారి", admin: "అడ్మిన్" },
+  bn: { citizen: "নাগরিক", officer: "কর্মকর্তা", admin: "প্রশাসক" },
+  gu: { citizen: "નાગરિક", officer: "અધિકારી", admin: "એડમિન" },
+  kn: { citizen: "ನಾಗರಿಕ", officer: "ಅಧಿಕಾರಿ", admin: "ಆಡಳಿತ" },
+  ml: { citizen: "പൗരൻ", officer: "ഉദ്യോഗസ്ഥൻ", admin: "അഡ്മിൻ" },
+  pa: { citizen: "ਨਾਗਰਿਕ", officer: "ਅਧਿਕਾਰੀ", admin: "ਐਡਮਿਨ" },
+};
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t, language } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -35,12 +51,11 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Login failed");
+        setError(data.error || t.loginError);
         setLoading(false);
         return;
       }
 
-      // Redirect based on role
       switch (data.user.role) {
         case "admin":
           router.push("/admin");
@@ -52,7 +67,7 @@ export default function LoginPage() {
           router.push("/citizen");
       }
     } catch {
-      setError("Network error. Please try again.");
+      setError(t.networkError);
       setLoading(false);
     }
   };
@@ -73,6 +88,11 @@ export default function LoginPage() {
 
       <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-6">
+          {/* Language Switcher */}
+          <div className="flex justify-end">
+            <LanguageSwitcher />
+          </div>
+
           {/* Logo */}
           <div className="text-center">
             <div className="mx-auto w-16 h-16 bg-gradient-to-br from-[#FF9933] via-white to-[#138808] rounded-2xl p-0.5 mb-4">
@@ -81,10 +101,10 @@ export default function LoginPage() {
               </div>
             </div>
             <h1 className="text-3xl font-bold text-gray-900">
-              ONE<span className="text-blue-900">GOV</span>
+              ONE<span className="text-[#FF9933]">GOV</span>
             </h1>
             <p className="mt-2 text-sm text-gray-600">
-              Government Services, Connected Around You
+              {t.loginSubtitle}
             </p>
             <div className="flex justify-center gap-1 mt-3">
               <span className="w-8 h-1 rounded-full bg-[#FF9933]" />
@@ -99,7 +119,7 @@ export default function LoginPage() {
           {/* Login Form */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">
-              Sign In
+              {t.loginTitle}
             </h2>
 
             <form onSubmit={handleLogin} className="space-y-4">
@@ -111,7 +131,7 @@ export default function LoginPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Address
+                  {t.emailLabel}
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -120,7 +140,7 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF9933] focus:border-[#FF9933] text-sm"
-                    placeholder="Enter your email"
+                    placeholder={t.emailPlaceholder}
                     required
                   />
                 </div>
@@ -128,7 +148,7 @@ export default function LoginPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Password
+                  {t.passwordLabel}
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -137,7 +157,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF9933] focus:border-[#FF9933] text-sm"
-                    placeholder="Enter your password"
+                    placeholder={t.passwordPlaceholder}
                     required
                   />
                   <button
@@ -159,7 +179,7 @@ export default function LoginPage() {
                 disabled={loading}
                 className="w-full py-2.5 bg-gradient-to-r from-[#FF9933] to-[#e88a2d] text-white rounded-lg font-medium hover:from-[#e88a2d] hover:to-[#FF9933] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
               >
-                {loading ? "Signing in..." : "Sign In"}
+                {loading ? t.processing : t.loginButton}
               </button>
             </form>
           </div>
@@ -167,10 +187,10 @@ export default function LoginPage() {
           {/* Demo Accounts */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">
-              Demo Accounts
+              {t.demoAccounts}
             </h3>
             <p className="text-xs text-gray-500 mb-4">
-              Click any account below to auto-fill credentials.
+              {t.demoDescription}
             </p>
             <div className="space-y-2">
               {DEMO_ACCOUNTS.map((account) => (
@@ -186,7 +206,7 @@ export default function LoginPage() {
                     <p className="text-xs text-gray-500">{account.email}</p>
                   </div>
                   <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
-                    {account.role}
+                    {ROLE_LABELS[language]?.[account.roleKey] || account.roleKey}
                   </span>
                 </button>
               ))}

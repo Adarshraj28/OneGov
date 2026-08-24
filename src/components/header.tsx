@@ -19,6 +19,8 @@ import {
   Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/lib/language-context";
+import LanguageSwitcher from "@/components/language-switcher";
 
 interface User {
   id: string;
@@ -30,6 +32,7 @@ interface User {
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useLanguage();
   const [user, setUser] = useState<User | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -56,22 +59,22 @@ export default function Header() {
   };
 
   const citizenLinks = [
-    { href: "/citizen", label: "Home", icon: Home },
-    { href: "/citizen/journey", label: "My Journeys", icon: FileText },
-    { href: "/citizen/documents", label: "Documents", icon: FolderOpen },
-    { href: "/citizen/profile", label: "Profile", icon: User },
+    { href: "/citizen", label: t.home, icon: Home },
+    { href: "/citizen/journey", label: t.myJourneys, icon: FileText },
+    { href: "/citizen/documents", label: t.documents, icon: FolderOpen },
+    { href: "/citizen/profile", label: t.profile, icon: User },
   ];
 
   const officerLinks = [
-    { href: "/officer", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/officer/journeys", label: "Applications", icon: FileText },
+    { href: "/officer", label: t.dashboard, icon: LayoutDashboard },
+    { href: "/officer/journeys", label: t.services, icon: FileText },
     { href: "/officer/health", label: "System Health", icon: Activity },
   ];
 
   const adminLinks = [
-    { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/admin", label: t.dashboard, icon: LayoutDashboard },
     { href: "/admin/journeys", label: "All Journeys", icon: FileText },
-    { href: "/admin/services", label: "Services", icon: Settings },
+    { href: "/admin/services", label: t.services, icon: Settings },
     { href: "/admin/simulation", label: "Simulation", icon: Activity },
     { href: "/admin/audit", label: "Audit Logs", icon: Shield },
   ];
@@ -138,7 +141,10 @@ export default function Header() {
           </div>
 
           {/* Right side */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {/* Language Switcher */}
+            <LanguageSwitcher />
+
             {/* Notifications */}
             <Link
               href="/citizen/notifications"
@@ -154,7 +160,7 @@ export default function Header() {
 
             {/* Role Badge */}
             <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#FF9933]/10 text-[#FF9933]">
-              {user.role === "admin" ? "Admin" : user.role === "officer" ? "Officer" : "Citizen"}
+              {user.role === "admin" ? t.admin : user.role === "officer" ? t.officer : t.citizen}
             </span>
 
             {/* Profile Dropdown */}
@@ -191,14 +197,14 @@ export default function Header() {
                       onClick={() => setProfileOpen(false)}
                     >
                       <User className="w-4 h-4" />
-                      Profile
+                      {t.profile}
                     </Link>
                     <button
                       onClick={handleLogout}
                       className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                     >
                       <LogOut className="w-4 h-4" />
-                      Sign Out
+                      {t.signOut}
                     </button>
                   </div>
                 </>

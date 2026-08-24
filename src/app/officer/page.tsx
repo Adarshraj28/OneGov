@@ -13,6 +13,7 @@ import {
   Loader2,
   Users,
 } from "lucide-react";
+import { useLanguage } from "@/lib/language-context";
 
 interface Journey {
   id: string;
@@ -26,6 +27,7 @@ interface Journey {
 
 export default function OfficerDashboard() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -79,10 +81,10 @@ export default function OfficerDashboard() {
         <PMModiBanner variant="compact" />
 
         <h1 className="text-2xl font-bold text-gray-900 mb-2 mt-6">
-          Officer Dashboard 🇮🇳
+          {t.officerDashboard} 🇮🇳
         </h1>
         <p className="text-sm text-gray-500 mb-6">
-          Monitor and manage citizen service applications
+          {t.officerSubtitle}
         </p>
 
         {/* Stats */}
@@ -94,7 +96,7 @@ export default function OfficerDashboard() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-                <p className="text-xs text-gray-500">Total Applications</p>
+                <p className="text-xs text-gray-500">{t.totalApplications}</p>
               </div>
             </div>
           </div>
@@ -105,7 +107,7 @@ export default function OfficerDashboard() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{stats.completed}</p>
-                <p className="text-xs text-gray-500">Completed</p>
+                <p className="text-xs text-gray-500">{t.completed}</p>
               </div>
             </div>
           </div>
@@ -116,7 +118,7 @@ export default function OfficerDashboard() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{stats.inProgress}</p>
-                <p className="text-xs text-gray-500">In Progress</p>
+                <p className="text-xs text-gray-500">{t.inProgress}</p>
               </div>
             </div>
           </div>
@@ -127,7 +129,7 @@ export default function OfficerDashboard() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{stats.blocked}</p>
-                <p className="text-xs text-gray-500">Blocked</p>
+                <p className="text-xs text-gray-500">{t.blocked}</p>
               </div>
             </div>
           </div>
@@ -137,7 +139,7 @@ export default function OfficerDashboard() {
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">
-              Recent Applications
+              {t.recentApplications}
             </h2>
           </div>
           <div className="overflow-x-auto">
@@ -145,19 +147,19 @@ export default function OfficerDashboard() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Citizen
+                    {t.citizenLabel}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Request
+                    {t.request}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Services
+                    {t.services}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Progress
+                    {t.progress}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Status
+                    {t.status}
                   </th>
                 </tr>
               </thead>
@@ -180,7 +182,7 @@ export default function OfficerDashboard() {
                     </td>
                     <td className="px-6 py-4">
                       <p className="text-sm text-gray-700">
-                        {j.steps?.length || 0} services
+                        {j.steps?.length || 0} {t.servicesCount}
                       </p>
                     </td>
                     <td className="px-6 py-4">

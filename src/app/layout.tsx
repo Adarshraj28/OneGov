@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { LanguageProvider } from "@/lib/language-context";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -24,9 +25,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} h-full`}>
       <body className="min-h-full flex flex-col bg-gray-50 font-sans antialiased">
-        <TooltipProvider>
-          {children}
-        </TooltipProvider>
+        <LanguageProvider>
+          <TooltipProvider>
+            {children}
+          </TooltipProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

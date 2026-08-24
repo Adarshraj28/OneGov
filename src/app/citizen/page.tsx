@@ -24,15 +24,7 @@ import {
   ScrollText,
 } from "lucide-react";
 import { OFFICIAL_GOV_SERVICES } from "@/lib/mock-data";
-
-const PROCESSING_STEPS = [
-  "Understanding your request...",
-  "Analyzing intent and location...",
-  "Discovering required government services...",
-  "Checking service dependencies...",
-  "Building your unified service journey...",
-  "Preparing service timeline...",
-];
+import { useLanguage } from "@/lib/language-context";
 
 interface Journey {
   id: string;
@@ -58,6 +50,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
 
 export default function CitizenHome() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [request, setRequest] = useState("");
   const [processing, setProcessing] = useState(false);
   const [processStep, setProcessStep] = useState(0);
@@ -96,15 +89,13 @@ export default function CitizenHome() {
     setProcessStep(0);
     setProcessDone([]);
 
-    // Simulate processing steps
-    for (let i = 0; i < PROCESSING_STEPS.length; i++) {
+    for (let i = 0; i < t.processSteps.length; i++) {
       setProcessStep(i);
       setProcessDone((prev) => prev.slice(0, i));
       await new Promise((r) => setTimeout(r, 600 + Math.random() * 400));
     }
-    setProcessDone(PROCESSING_STEPS.map((_, i) => i));
+    setProcessDone(t.processSteps.map((_, i) => i));
 
-    // Actually create the journey
     try {
       const res = await fetch("/api/journeys/new", {
         method: "POST",
@@ -122,15 +113,6 @@ export default function CitizenHome() {
       setProcessing(false);
     }
   };
-
-  const quickRequests = [
-    "I want to apply for a passport",
-    "I need to update my Aadhaar card",
-    "I want to open a restaurant in Pune",
-    "I need a driving license",
-    "I want to register a property",
-    "I need a birth certificate",
-  ];
 
   const statusIcon = (status: string) => {
     switch (status) {
@@ -156,11 +138,10 @@ export default function CitizenHome() {
         {/* Hero Section */}
         <div className="text-center mt-10 mb-10">
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
-            Government services, connected around you.
+            {t.heroTitle}
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Tell us what you need. ONEGOV discovers the required services and
-            guides you through one unified journey.
+            {t.heroSubtitle}
           </p>
           <div className="flex justify-center gap-1 mt-4">
             <span className="w-8 h-1 rounded-full bg-[#FF9933]" />
@@ -174,7 +155,7 @@ export default function CitizenHome() {
           <form onSubmit={handleSubmit}>
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <label className="block text-sm font-semibold text-gray-700 mb-3">
-                What do you want to do?
+                {t.whatToDo}
               </label>
               <div className="flex gap-3">
                 <div className="relative flex-1">
@@ -183,7 +164,7 @@ export default function CitizenHome() {
                     type="text"
                     value={request}
                     onChange={(e) => setRequest(e.target.value)}
-                    placeholder='e.g., "I want to apply for a passport"'
+                    placeholder={t.searchPlaceholder}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#FF9933] focus:border-[#FF9933]"
                     disabled={processing}
                   />
@@ -199,15 +180,14 @@ export default function CitizenHome() {
                     <ArrowRight className="w-4 h-4" />
                   )}
                   <span className="hidden sm:inline">
-                    {processing ? "Processing..." : "Discover"}
+                    {processing ? t.processing : t.discover}
                   </span>
                 </button>
               </div>
 
-              {/* Quick suggestions */}
               {!processing && (
                 <div className="flex flex-wrap gap-2 mt-4">
-                  {quickRequests.map((q) => (
+                  {t.quickRequests.map((q) => (
                     <button
                       key={q}
                       type="button"
@@ -222,11 +202,10 @@ export default function CitizenHome() {
             </div>
           </form>
 
-          {/* Processing Animation */}
           {processing && (
             <div className="mt-4 bg-white rounded-xl border border-gray-200 p-6">
               <div className="space-y-3">
-                {PROCESSING_STEPS.map((step, i) => (
+                {t.processSteps.map((step, i) => (
                   <div key={i} className="flex items-center gap-3">
                     {processDone.includes(i) ? (
                       <CheckCircle2 className="w-5 h-5 text-[#138808] shrink-0" />
@@ -262,7 +241,7 @@ export default function CitizenHome() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-                <p className="text-xs text-gray-500">Total Journeys</p>
+                <p className="text-xs text-gray-500">{t.totalJourneys}</p>
               </div>
             </div>
           </div>
@@ -273,7 +252,7 @@ export default function CitizenHome() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{stats.completed}</p>
-                <p className="text-xs text-gray-500">Completed</p>
+                <p className="text-xs text-gray-500">{t.completed}</p>
               </div>
             </div>
           </div>
@@ -284,7 +263,7 @@ export default function CitizenHome() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{stats.inProgress}</p>
-                <p className="text-xs text-gray-500">In Progress</p>
+                <p className="text-xs text-gray-500">{t.inProgress}</p>
               </div>
             </div>
           </div>
@@ -295,7 +274,7 @@ export default function CitizenHome() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{stats.pending}</p>
-                <p className="text-xs text-gray-500">Pending</p>
+                <p className="text-xs text-gray-500">{t.pending}</p>
               </div>
             </div>
           </div>
@@ -306,13 +285,13 @@ export default function CitizenHome() {
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">
-                Recent Service Journeys
+                {t.recentJourneys}
               </h2>
               <button
                 onClick={() => router.push("/citizen/journey")}
                 className="text-sm text-[#FF9933] hover:text-[#e88a2d] font-medium"
               >
-                View All →
+                {t.viewAll} →
               </button>
             </div>
             <div className="space-y-3">
@@ -329,7 +308,7 @@ export default function CitizenHome() {
                         {journey.intent}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {journey.steps?.length || 0} services •{" "}
+                        {journey.steps?.length || 0} {t.servicesCount} •{" "}
                         {new Date(journey.createdAt).toLocaleDateString()}
                       </p>
                     </div>
@@ -356,10 +335,10 @@ export default function CitizenHome() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-lg font-semibold text-gray-900">
-                Official Government Services
+                {t.officialGovServices}
               </h2>
               <p className="text-sm text-gray-500 mt-1">
-                Integrated services from departments across India 🇮🇳
+                {t.govServicesSubtitle}
               </p>
             </div>
           </div>
@@ -393,13 +372,13 @@ export default function CitizenHome() {
             <span className="w-12 h-1 rounded-full bg-[#138808]" />
           </div>
           <p className="text-white font-semibold text-lg">
-            🇮🇳 Government of India — Digital India Initiative
+            🇮🇳 {t.govFooter}
           </p>
           <p className="text-blue-200 text-sm mt-2">
-            ONEGOV is a prototype for Smart India Hackathon 2026
+            {t.govFooterSub}
           </p>
           <p className="text-blue-300 text-xs mt-1">
-            Problem Statement SIH26129 — Government of Maharashtra
+            {t.sihPrototype}
           </p>
         </div>
       </main>
