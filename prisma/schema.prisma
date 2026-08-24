@@ -1,0 +1,251 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ─── Authentication & Users ────────────────────────────────────
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  phone        String?
+  role         String    @default("citizen") // citizen | officer | admin
+  avatar       String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  profile           CitizenProfile?
+  journeys          ServiceJourney[]
+  documents         Document[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  consentRecords    ConsentRecord[]
+}
+
+// ─── Citizen Profile ──────────────────────────────────────────
+
+model CitizenProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  address     String?
+  city        String?
+  state       String?
+  pincode     String?
+  dateOfBirth String?
+  gender      String?
+  panNumber   String?
+  aadhaarNumber String?
+  gstNumber   String?
+  businessName  String?
+  businessType  String?
+  verifiedFields String @default("[]") // JSON array of verified field names
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── Department ───────────────────────────────────────────────
+
+model Department {
+  id          String    @id @default(uuid())
+  name        String
+  code        String    @unique
+  description String?
+  icon        String?
+  color       String?
+  apiBaseUrl  String?
+  status      String    @default("active") // active | inactive
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  services    Service[]
+}
+
+// ─── Service Registry ─────────────────────────────────────────
+
+model Service {
+  id               String   @id @default(uuid())
+  name             String
+  code             String   @unique
+  departmentId     String
+  department       Department @relation(fields: [departmentId], references: [id])
+  description      String
+  category         String   // business | food | safety | tax | municipal | general
+  requiredDocuments String  @default("[]") // JSON array
+  requiredFields   String   @default("[]") // JSON array
+  adapterType      String   // adapter class name
+  apiEndpoint      String?
+  estimatedDays    Int      @default(7)
+  slaDays          Int      @default(14)
+  status           String   @default("active") // active | inactive | deprecated
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  journeySteps JourneyStep[]
+  dependencies ServiceDependency[] @relation("DependsOn")
+  dependedBy   ServiceDependency[]
+}
+
+// ─── Service Dependencies ─────────────────────────────────────
+
+model ServiceDependency {
+  id                String  @id @default(uuid())
+  serviceId         String
+  service           Service @relation(fields: [serviceId], references: [id])
+  dependsOnServiceId String
+  dependsOnService  Service @relation("DependsOn", fields: [dependsOnServiceId], references: [id])
+  isMandatory       Boolean @default(true)
+
+  @@unique([serviceId, dependsOnServiceId])
+}
+
+// ─── Service Journey ──────────────────────────────────────────
+
+model ServiceJourney {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  intent      String   // raw user input
+  intentParsed String  @default("{}") // JSON: structured AI intent
+  description String?
+  status      String   @default("created") // created | in_progress | completed | failed | cancelled
+  progress    Float    @default(0) // 0-100
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  steps JourneyStep[]
+}
+
+// ─── Journey Step ─────────────────────────────────────────────
+
+model JourneyStep {
+  id                    String        @id @default(uuid())
+  journeyId             String
+  journey               ServiceJourney @relation(fields: [journeyId], references: [id])
+  serviceId             String
+  service               Service       @relation(fields: [serviceId], references: [id])
+  status                String        @default("pending") // pending | in_progress | submitted | reviewing | approved | rejected | failed | waiting
+  sequence              Int
+  dependsOnStepId       String?
+  externalApplicationId String?
+  failureReason         String?
+  retryCount            Int           @default(0)
+  maxRetries            Int           @default(3)
+  startedAt             DateTime?
+  completedAt           DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  integrationRequests IntegrationRequest[]
+}
+
+// ─── Document ─────────────────────────────────────────────────
+
+model Document {
+  id                 String   @id @default(uuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id])
+  type               String   // pan | aadhaar | address_proof | business_cert | property_doc | custom
+  name               String
+  fileUrl            String?
+  verificationStatus String   @default("uploaded") // uploaded | verified | rejected | prototype_verified
+  extractedData      String   @default("{}") // JSON
+  metadata           String   @default("{}") // JSON
+  createdAt          DateTime @default(now())
+}
+
+// ─── Integration Request Log ──────────────────────────────────
+
+model IntegrationRequest {
+  id               String      @id @default(uuid())
+  journeyStepId    String
+  journeyStep      JourneyStep @relation(fields: [journeyStepId], references: [id])
+  department       String
+  endpoint         String
+  method           String      @default("POST")
+  requestPayload   String      @default("{}")
+  responsePayload  String      @default("{}")
+  statusCode       Int?
+  status           String      @default("pending") // pending | success | failed | timeout | retrying
+  retryCount       Int         @default(0)
+  correlationId    String      @default(uuid())
+  latencyMs        Int?
+  errorMessage     String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+}
+
+// ─── Consent Record ───────────────────────────────────────────
+
+model ConsentRecord {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  journeyId   String?
+  department  String
+  fieldsShared String  // JSON array of field names
+  purpose     String
+  granted     Boolean  @default(false)
+  grantedAt   DateTime?
+  revokedAt   DateTime?
+  ipAddress   String?
+  createdAt   DateTime  @default(now())
+}
+
+// ─── Notification ─────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // status_update | reminder | alert | system
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+}
+
+// ─── Audit Log ────────────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  resource  String
+  resourceId String?
+  metadata  String   @default("{}") // JSON
+  ipAddress String?
+  createdAt DateTime @default(now())
+}
+
+// ─── System Config ────────────────────────────────────────────
+
+model SystemConfig {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  category  String   @default("general")
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Integration Health ───────────────────────────────────────
+
+model IntegrationHealth {
+  id              String   @id @default(uuid())
+  department      String   @unique
+  status          String   @default("online") // online | offline | degraded
+  latencyMs       Int      @default(0)
+  uptimePercent   Float    @default(100)
+  totalRequests   Int      @default(0)
+  failedRequests  Int      @default(0)
+  lastCheckedAt   DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
