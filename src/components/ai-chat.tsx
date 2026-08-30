@@ -109,7 +109,7 @@ export default function AIChat({ onWorkflowCreated }: AIChatProps) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -196,10 +196,11 @@ export default function AIChat({ onWorkflowCreated }: AIChatProps) {
     setLoading(true);
 
     try {
+      // Send a fresh greeting — no contextId means new conversation
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: "Hello" }),
+        body: JSON.stringify({ message: "Hello", newChat: true }),
       });
       const data = await res.json();
       if (data.success && data.response) {

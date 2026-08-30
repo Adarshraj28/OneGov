@@ -34,7 +34,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { message, contextId } = body;
+    const { message, contextId, newChat } = body;
+
+    // If newChat flag, force a completely new context
+    const effectiveContextId = newChat ? `new-${Date.now()}` : contextId;
 
     if (!message || typeof message !== "string" || message.trim().length === 0) {
       return NextResponse.json(
@@ -54,7 +57,7 @@ export async function POST(request: NextRequest) {
     const { response, contextId: newContextId } = await engine.chat(
       user.userId,
       message.trim(),
-      contextId
+      effectiveContextId
     );
 
     return NextResponse.json({

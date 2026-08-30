@@ -121,27 +121,27 @@ export default function Header() {
 
       {/* Main Nav */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-12">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link
             href={user.role === "admin" ? "/admin" : user.role === "officer" ? "/officer" : "/citizen"}
             className="flex items-center gap-2 shrink-0"
           >
-            <div className="w-7 h-7 bg-gradient-to-br from-[#FF9933] via-white to-[#138808] rounded-md p-0.5">
-              <div className="w-full h-full bg-blue-900 rounded-md flex items-center justify-center">
-                <span className="text-white font-bold text-[10px]">OG</span>
+            <div className="w-9 h-9 bg-gradient-to-br from-[#FF9933] via-white to-[#138808] rounded-lg p-0.5">
+              <div className="w-full h-full bg-blue-900 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">OG</span>
               </div>
             </div>
-            <div className="leading-none">
-              <span className="text-base font-bold text-gray-900">
+            <div className="leading-tight">
+              <span className="text-xl font-bold text-gray-900">
                 ONE<span className="text-[#FF9933]">GOV</span>
               </span>
-              <span className="text-[7px] text-gray-400 block">एक सरकार — एक मंच</span>
+              <span className="text-[9px] text-gray-400 block">एक सरकार — एक मंच</span>
             </div>
           </Link>
 
           {/* Desktop Nav — Centered */}
-          <nav className="hidden md:flex items-center gap-0.5">
+          <nav className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => {
               const Icon = link.icon;
               const isActive =
@@ -152,13 +152,13 @@ export default function Header() {
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    "flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors",
+                    "flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors",
                     isActive
                       ? "bg-[#FF9933]/10 text-[#FF9933]"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                   )}
                 >
-                  <Icon className="w-3.5 h-3.5" />
+                  <Icon className="w-4 h-4" />
                   {link.label}
                 </Link>
               );
@@ -167,19 +167,17 @@ export default function Header() {
 
           {/* Right side */}
           <div className="flex items-center gap-1.5">
-            {/* Language — small */}
-            <div className="scale-90 origin-right">
-              <LanguageSwitcher />
-            </div>
+            {/* Language */}
+            <LanguageSwitcher />
 
             {/* Notifications */}
             <Link
               href="/citizen/notifications"
               className="relative p-1.5 text-gray-400 hover:text-[#FF9933] rounded-md hover:bg-[#FF9933]/10 transition-colors"
             >
-              <Bell className="w-4 h-4" />
+              <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-[#FF9933] text-white text-[9px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold">
+                <span className="absolute -top-0.5 -right-0.5 bg-[#FF9933] text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
@@ -191,10 +189,10 @@ export default function Header() {
                 onClick={() => setProfileOpen(!profileOpen)}
                 className="flex items-center gap-1.5 p-1 rounded-md hover:bg-gray-50 transition-colors"
               >
-                <div className="w-7 h-7 bg-gradient-to-br from-[#FF9933] to-[#138808] rounded-full flex items-center justify-center">
-                  <User className="w-3.5 h-3.5 text-white" />
+                <div className="w-8 h-8 bg-gradient-to-br from-[#FF9933] to-[#138808] rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-white" />
                 </div>
-                <span className="hidden sm:block text-xs font-medium text-gray-700 max-w-[100px] truncate">
+                <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[120px] truncate">
                   {user.name.split(" ")[0]}
                 </span>
                 <ChevronDown className="w-3 h-3 text-gray-400" />
@@ -245,7 +243,7 @@ export default function Header() {
               className="md:hidden p-1.5 text-gray-400 hover:text-[#FF9933]"
               onClick={() => setMobileOpen(!mobileOpen)}
             >
-              {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
