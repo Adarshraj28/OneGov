@@ -100,6 +100,14 @@ export default function AdminDashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <PMModiBanner variant="compact" />
 
+        {/* Demo Mode Banner */}
+        <div className="bg-[#FF9933]/5 border border-[#FF9933]/20 rounded-xl p-3 mb-6 flex items-center gap-3">
+          <span className="text-xs">🧪</span>
+          <p className="text-xs text-gray-700">
+            <strong>Demo / Mock Data Mode</strong> — All metrics, integrations, and government API responses are simulated for SIH 26129 prototype demonstration.
+          </p>
+        </div>
+
         <div className="flex items-center justify-between mb-6 mt-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">

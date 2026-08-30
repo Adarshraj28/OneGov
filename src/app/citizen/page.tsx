@@ -4,14 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/header";
 import PMModiBanner from "@/components/pm-modi-banner";
+import AIChat from "@/components/ai-chat";
 import {
-  ArrowRight,
   FileText,
   Clock,
   CheckCircle2,
   AlertCircle,
-  Loader2,
-  Search,
   Fingerprint,
   CreditCard,
   BookOpen,
@@ -51,10 +49,6 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
 export default function CitizenHome() {
   const router = useRouter();
   const { t } = useLanguage();
-  const [request, setRequest] = useState("");
-  const [processing, setProcessing] = useState(false);
-  const [processStep, setProcessStep] = useState(0);
-  const [processDone, setProcessDone] = useState<number[]>([]);
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [stats, setStats] = useState({ total: 0, completed: 0, inProgress: 0, pending: 0 });
 
@@ -81,37 +75,9 @@ export default function CitizenHome() {
       .catch(() => {});
   }, [router]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!request.trim()) return;
-
-    setProcessing(true);
-    setProcessStep(0);
-    setProcessDone([]);
-
-    for (let i = 0; i < t.processSteps.length; i++) {
-      setProcessStep(i);
-      setProcessDone((prev) => prev.slice(0, i));
-      await new Promise((r) => setTimeout(r, 600 + Math.random() * 400));
-    }
-    setProcessDone(t.processSteps.map((_, i) => i));
-
-    try {
-      const res = await fetch("/api/journeys/new", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ intent: request }),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        setTimeout(() => {
-          router.push(`/citizen/journey/${data.journey.id}`);
-        }, 800);
-      }
-    } catch {
-      setProcessing(false);
-    }
+  const handleWorkflowCreated = (workflowId: string) => {
+    // Navigate to journey detail when AI creates a workflow
+    router.push(`/citizen/journey/${workflowId}`);
   };
 
   const statusIcon = (status: string) => {
@@ -150,86 +116,11 @@ export default function CitizenHome() {
           </div>
         </div>
 
-        {/* AI Request Box */}
-        <div className="max-w-2xl mx-auto mb-12">
-          <form onSubmit={handleSubmit}>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                {t.whatToDo}
-              </label>
-              <div className="flex gap-3">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    value={request}
-                    onChange={(e) => setRequest(e.target.value)}
-                    placeholder={t.searchPlaceholder}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#FF9933] focus:border-[#FF9933]"
-                    disabled={processing}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={processing || !request.trim()}
-                  className="px-6 py-3 bg-gradient-to-r from-[#FF9933] to-[#e88a2d] text-white rounded-lg font-medium hover:from-[#e88a2d] hover:to-[#FF9933] transition-all disabled:opacity-50 flex items-center gap-2 shadow-md"
-                >
-                  {processing ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <ArrowRight className="w-4 h-4" />
-                  )}
-                  <span className="hidden sm:inline">
-                    {processing ? t.processing : t.discover}
-                  </span>
-                </button>
-              </div>
-
-              {!processing && (
-                <div className="flex flex-wrap gap-2 mt-4">
-                  {t.quickRequests.map((q) => (
-                    <button
-                      key={q}
-                      type="button"
-                      onClick={() => setRequest(q)}
-                      className="text-xs px-3 py-1.5 bg-gray-100 text-gray-600 rounded-full hover:bg-[#FF9933]/10 hover:text-[#FF9933] transition-colors"
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </form>
-
-          {processing && (
-            <div className="mt-4 bg-white rounded-xl border border-gray-200 p-6">
-              <div className="space-y-3">
-                {t.processSteps.map((step, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    {processDone.includes(i) ? (
-                      <CheckCircle2 className="w-5 h-5 text-[#138808] shrink-0" />
-                    ) : processStep === i ? (
-                      <Loader2 className="w-5 h-5 text-[#FF9933] animate-spin shrink-0" />
-                    ) : (
-                      <div className="w-5 h-5 rounded-full border-2 border-gray-200 shrink-0" />
-                    )}
-                    <span
-                      className={`text-sm ${
-                        processDone.includes(i)
-                          ? "text-[#138808]"
-                          : processStep === i
-                            ? "text-[#FF9933] font-medium"
-                            : "text-gray-400"
-                      }`}
-                    >
-                      {step}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+        {/* AI Chat Interface */}
+        <div className="max-w-3xl mx-auto mb-12">
+          <div className="h-[500px]">
+            <AIChat onWorkflowCreated={handleWorkflowCreated} />
+          </div>
         </div>
 
         {/* Stats Cards */}

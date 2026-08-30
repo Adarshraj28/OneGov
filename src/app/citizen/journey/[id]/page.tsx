@@ -16,6 +16,10 @@ import {
   ExternalLink,
   AlertTriangle,
   RotateCw,
+  Lock,
+  Building2,
+  Target,
+  ChevronDown,
 } from "lucide-react";
 
 interface JourneyStep {
@@ -43,11 +47,37 @@ interface JourneyStep {
 interface Journey {
   id: string;
   intent: string;
+  intentParsed?: string;
   status: string;
   progress: number;
   createdAt: string;
   steps: JourneyStep[];
 }
+
+// Citizen-friendly status config
+const STATUS_CONFIG: Record<string, { icon: string; label: string; color: string; bgColor: string; borderColor: string }> = {
+  pending: { icon: "☐", label: "Not Started", color: "text-gray-500", bgColor: "bg-gray-50", borderColor: "border-gray-200" },
+  waiting: { icon: "🔒", label: "Blocked", color: "text-gray-500", bgColor: "bg-gray-50", borderColor: "border-gray-200" },
+  in_progress: { icon: "⏳", label: "In Progress", color: "text-[#FF9933]", bgColor: "bg-orange-50", borderColor: "border-orange-200" },
+  submitted: { icon: "🏛️", label: "Waiting for Government", color: "text-blue-600", bgColor: "bg-blue-50", borderColor: "border-blue-200" },
+  reviewing: { icon: "🏛️", label: "Under Review", color: "text-blue-600", bgColor: "bg-blue-50", borderColor: "border-blue-200" },
+  approved: { icon: "🟢", label: "Completed", color: "text-[#138808]", bgColor: "bg-green-50", borderColor: "border-green-200" },
+  completed: { icon: "🟢", label: "Completed", color: "text-[#138808]", bgColor: "bg-green-50", borderColor: "border-green-200" },
+  rejected: { icon: "❌", label: "Action Required", color: "text-red-600", bgColor: "bg-red-50", borderColor: "border-red-200" },
+  failed: { icon: "⚠️", label: "Service Unavailable", color: "text-red-600", bgColor: "bg-red-50", borderColor: "border-red-200" },
+};
+
+// Official portal URLs
+const OFFICIAL_PORTALS: Record<string, { url: string; name: string }> = {
+  business_registration: { url: "https://www.mca.gov.in", name: "MCA Portal" },
+  tax_registration: { url: "https://www.gst.gov.in", name: "GST Portal" },
+  food_license: { url: "https://www.fssai.gov.in", name: "FSSAI Portal" },
+  passport: { url: "https://www.passportindia.gov.in", name: "Passport Seva" },
+  driving_license: { url: "https://parivahan.gov.in", name: "Parivahan Portal" },
+  aadhaar_update: { url: "https://www.uidai.gov.in", name: "UIDAI Portal" },
+  pan_card: { url: "https://www.onlineservices.nsdl.com", name: "NSDL Portal" },
+  voter_id: { url: "https://www.nvsp.in", name: "NVSP Portal" },
+};
 
 export default function JourneyDetailPage({
   params,
@@ -61,6 +91,7 @@ export default function JourneyDetailPage({
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [consentStep, setConsentStep] = useState<JourneyStep | null>(null);
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
+  const [showReadiness, setShowReadiness] = useState(false);
 
   useEffect(() => {
     fetchJourney();
@@ -96,7 +127,6 @@ export default function JourneyDetailPage({
 
       const data = await res.json();
       if (data.success) {
-        // Refresh journey
         await fetchJourney();
       } else {
         alert(data.error || "Submission failed");
@@ -108,54 +138,23 @@ export default function JourneyDetailPage({
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "approved":
-      case "completed":
-        return <CheckCircle2 className="w-5 h-5 text-green-600" />;
-      case "submitted":
-        return <Send className="w-5 h-5 text-blue-600" />;
-      case "in_progress":
-        return <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />;
-      case "failed":
-        return <AlertCircle className="w-5 h-5 text-red-600" />;
-      case "waiting":
-        return <Clock className="w-5 h-5 text-gray-400" />;
-      default:
-        return <div className="w-5 h-5 rounded-full border-2 border-gray-300" />;
-    }
+  // Compute step statistics
+  const getStepStats = () => {
+    if (!journey) return { completed: 0, total: 0, current: null as JourneyStep | null, next: null as JourneyStep | null, blocked: 0, waiting: 0 };
+    const completed = journey.steps.filter((s) => s.status === "approved" || s.status === "completed").length;
+    const blocked = journey.steps.filter((s) => s.status === "waiting").length;
+    const waiting = journey.steps.filter((s) => s.status === "submitted" || s.status === "reviewing").length;
+    const current = journey.steps.find((s) => s.status === "in_progress") || null;
+    const next = journey.steps.find((s) => s.status === "pending" || s.status === "waiting") || null;
+    return { completed, total: journey.steps.length, current, next, blocked, waiting };
   };
 
-  const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      pending: "Not Started",
-      waiting: "Waiting for Dependencies",
-      in_progress: "In Progress",
-      submitted: "Submitted to Department",
-      reviewing: "Under Review",
-      approved: "Approved",
-      completed: "Completed",
-      rejected: "Rejected",
-      failed: "Service Unavailable",
-    };
-    return labels[status] || status;
+  const getDeptName = (dept: string | { name: string; code: string; id: string }) => {
+    return typeof dept === "string" ? dept : dept.name;
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "approved":
-      case "completed":
-        return "text-green-700 bg-green-50 border-green-200";
-      case "submitted":
-      case "in_progress":
-        return "text-blue-700 bg-blue-50 border-blue-200";
-      case "failed":
-        return "text-red-700 bg-red-50 border-red-200";
-      case "waiting":
-        return "text-gray-600 bg-gray-50 border-gray-200";
-      default:
-        return "text-gray-600 bg-gray-50 border-gray-200";
-    }
+  const getPortal = (code: string) => {
+    return OFFICIAL_PORTALS[code] || null;
   };
 
   if (loading) {
@@ -163,7 +162,7 @@ export default function JourneyDetailPage({
       <div className="min-h-screen bg-gray-50">
         <Header />
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+          <Loader2 className="w-6 h-6 text-[#FF9933] animate-spin" />
         </div>
       </div>
     );
@@ -180,6 +179,9 @@ export default function JourneyDetailPage({
     );
   }
 
+  const stats = getStepStats();
+  const isComplete = journey.status === "completed" || stats.completed === stats.total;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -194,12 +196,12 @@ export default function JourneyDetailPage({
           Back to Home
         </button>
 
-        {/* Journey Header */}
+        {/* Journey Header with Progress */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-xl font-bold text-gray-900">
-                Service Journey
+                {isComplete ? "🟢 Journey Complete" : "Service Journey"}
               </h1>
               <p className="text-sm text-gray-600 mt-1">{journey.intent}</p>
               <p className="text-xs text-gray-400 mt-1">
@@ -207,32 +209,114 @@ export default function JourneyDetailPage({
                 {new Date(journey.createdAt).toLocaleDateString()}
               </p>
             </div>
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(journey.status)}`}
-            >
-              {getStatusLabel(journey.status)}
-            </span>
+            {journey.status === "completed" ? (
+              <span className="px-3 py-1 rounded-full text-xs font-medium text-[#138808] bg-[#138808]/10 border border-[#138808]/20">
+                🟢 Completed
+              </span>
+            ) : (
+              <span className="px-3 py-1 rounded-full text-xs font-medium text-[#FF9933] bg-[#FF9933]/10 border border-[#FF9933]/20">
+                ⏳ In Progress
+              </span>
+            )}
           </div>
 
           {/* Progress Bar */}
           <div className="mt-4">
             <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-              <span>Progress</span>
-              <span>{journey.progress}%</span>
+              <span className="font-medium">
+                {stats.completed} of {stats.total} steps completed
+              </span>
+              <span className="font-bold text-gray-900">{journey.progress}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div className="w-full bg-gray-200 rounded-full h-3">
               <div
-                className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
+                className="bg-gradient-to-r from-[#FF9933] to-[#138808] h-3 rounded-full transition-all duration-500"
                 style={{ width: `${journey.progress}%` }}
               />
             </div>
           </div>
+
+          {/* Quick Status Summary */}
+          <div className="flex flex-wrap gap-3 mt-4 text-xs">
+            {stats.completed > 0 && (
+              <span className="flex items-center gap-1 text-[#138808]">
+                🟢 {stats.completed} completed
+              </span>
+            )}
+            {stats.waiting > 0 && (
+              <span className="flex items-center gap-1 text-blue-600">
+                🏛️ {stats.waiting} under review
+              </span>
+            )}
+            {stats.blocked > 0 && (
+              <span className="flex items-center gap-1 text-gray-500">
+                🔒 {stats.blocked} blocked
+              </span>
+            )}
+            {stats.current && (
+              <span className="flex items-center gap-1 text-[#FF9933]">
+                ⏳ Current: {stats.current.service.name}
+              </span>
+            )}
+          </div>
         </div>
+
+        {/* Final Readiness Banner (shown when all steps complete) */}
+        {isComplete && (
+          <div className="bg-gradient-to-r from-[#138808]/5 to-[#138808]/10 rounded-xl border border-[#138808]/20 p-6 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-[#138808] rounded-full flex items-center justify-center">
+                <CheckCircle2 className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-[#138808]">
+                  🟢 READY TO PROCEED
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  All government services for your journey have been completed successfully.
+                  You are ready to proceed with your business.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Action Required Banner (when there are rejected/failed steps) */}
+        {!isComplete && stats.completed > 0 && stats.completed < stats.total && (
+          <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Target className="w-5 h-5 text-[#FF9933]" />
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Current Step</p>
+                  {stats.current ? (
+                    <p className="text-xs text-gray-600">
+                      {stats.current.service.name} — {getDeptName(stats.current.service.department)}
+                    </p>
+                  ) : stats.next ? (
+                    <p className="text-xs text-gray-600">
+                      {stats.next.service.name} — {getDeptName(stats.next.service.department)}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  const stepId = stats.current?.id || stats.next?.id;
+                  if (stepId) setExpandedStep(stepId);
+                }}
+                className="px-4 py-2 bg-gradient-to-r from-[#FF9933] to-[#e88a2d] text-white rounded-lg text-xs font-medium hover:from-[#e88a2d] hover:to-[#FF9933] transition-all shadow-sm"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Service Journey Timeline */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-6">
-            Your Service Journey
+            Service Roadmap
           </h2>
 
           <div className="relative">
@@ -240,160 +324,218 @@ export default function JourneyDetailPage({
             <div className="absolute left-[15px] top-5 bottom-5 w-0.5 bg-gray-200" />
 
             <div className="space-y-1">
-              {journey.steps.map((step, i) => (
-                <div key={step.id}>
-                  <div
-                    className={`relative flex items-start gap-4 p-4 rounded-lg cursor-pointer transition-colors ${
-                      expandedStep === step.id
-                        ? "bg-gray-50"
-                        : "hover:bg-gray-50"
-                    }`}
-                    onClick={() =>
-                      setExpandedStep(
-                        expandedStep === step.id ? null : step.id
-                      )
-                    }
-                  >
-                    {/* Step Icon */}
-                    <div className="relative z-10 mt-0.5">
-                      {getStatusIcon(step.status)}
-                    </div>
+              {journey.steps.map((step) => {
+                const config = STATUS_CONFIG[step.status] || STATUS_CONFIG.pending;
+                const portal = getPortal(step.service.code);
 
-                    {/* Step Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400 font-mono">
-                          Step {step.sequence}
-                        </span>
-                        <span className="text-sm font-semibold text-gray-900">
-                          {step.service.name}
-                        </span>
+                return (
+                  <div key={step.id}>
+                    <div
+                      className={`relative flex items-start gap-4 p-4 rounded-lg cursor-pointer transition-colors border border-transparent ${
+                        expandedStep === step.id
+                          ? `${config.bgColor} ${config.borderColor}`
+                          : `hover:bg-gray-50`
+                      }`}
+                      onClick={() =>
+                        setExpandedStep(expandedStep === step.id ? null : step.id)
+                      }
+                    >
+                      {/* Step Status Icon */}
+                      <div className="relative z-10 mt-0.5 text-lg shrink-0">
+                        {config.icon}
                       </div>
-                      <p className="text-xs text-gray-500 mt-0.5">                      {typeof step.service.department === 'string' ? step.service.department : step.service.department.name} • Est. {" "}
-                        {step.service.estimatedDays} days
-                      </p>
 
-                      {step.externalApplicationId && (
-                        <p className="text-xs text-blue-600 mt-1 font-mono">
-                          Application: {step.externalApplicationId}
-                        </p>
-                      )}
-
-                      {step.failureReason && (
-                        <div className="flex items-center gap-1 mt-1 text-xs text-red-600">
-                          <AlertTriangle className="w-3 h-3" />
-                          {step.failureReason}
+                      {/* Step Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-400 font-mono">
+                            Step {step.sequence}
+                          </span>
+                          <span className="text-sm font-semibold text-gray-900">
+                            {step.service.name}
+                          </span>
                         </div>
-                      )}
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {getDeptName(step.service.department)} • Est.{" "}
+                          {step.service.estimatedDays} days
+                        </p>
+
+                        {step.externalApplicationId && (
+                          <p className="text-xs text-blue-600 mt-1 font-mono">
+                            Application: {step.externalApplicationId}
+                          </p>
+                        )}
+
+                        {step.failureReason && (
+                          <div className="flex items-center gap-1 mt-1 text-xs text-red-600">
+                            <AlertTriangle className="w-3 h-3" />
+                            {step.failureReason}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Status Badge */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-xs font-medium border ${config.color} ${config.bgColor} ${config.borderColor}`}
+                        >
+                          {config.label}
+                        </span>
+                        <ChevronRight
+                          className={`w-4 h-4 text-gray-400 transition-transform ${
+                            expandedStep === step.id ? "rotate-90" : ""
+                          }`}
+                        />
+                      </div>
                     </div>
 
-                    {/* Status Badge */}
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(step.status)}`}
-                      >
-                        {getStatusLabel(step.status)}
-                      </span>
-                      <ChevronRight
-                        className={`w-4 h-4 text-gray-400 transition-transform ${
-                          expandedStep === step.id ? "rotate-90" : ""
-                        }`}
-                      />
-                    </div>
-                  </div>
+                    {/* Expanded Details */}
+                    {expandedStep === step.id && (
+                      <div className="ml-12 mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <p className="text-sm text-gray-700 mb-3">
+                          {step.service.description}
+                        </p>
 
-                  {/* Expanded Details */}
-                  {expandedStep === step.id && (
-                    <div className="ml-12 mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                      <p className="text-sm text-gray-700 mb-3">
-                        {step.service.description}
-                      </p>
-
-                      {step.service.code && (
+                        {/* Required Documents */}
                         <div className="mb-3">
                           <p className="text-xs font-medium text-gray-500 mb-1">
-                            Service Code
+                            📄 Required Documents
                           </p>
-                          <p className="text-xs font-mono text-gray-700">
-                            {step.service.code}
-                          </p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {["Identity proof", "Address proof", "Business plan"].map(
+                              (doc) => (
+                                <span
+                                  key={doc}
+                                  className="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full border border-gray-200"
+                                >
+                                  {doc}
+                                </span>
+                              )
+                            )}
+                          </div>
                         </div>
-                      )}
 
-                      {/* Action buttons */}
-                      {step.status === "in_progress" && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleShowConsent(step);
-                          }}
-                          disabled={submitting === step.id}
-                          className="flex items-center gap-2 px-4 py-2 bg-blue-900 text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors disabled:opacity-50"
-                        >
-                          {submitting === step.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Send className="w-4 h-4" />
-                          )}
-                          Submit Application
-                        </button>
-                      )}
+                        {/* Official Portal Link */}
+                        {portal && (
+                          <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <Building2 className="w-4 h-4 text-blue-600" />
+                              <div>
+                                <p className="text-xs font-medium text-blue-800">
+                                  Official Government Portal
+                                </p>
+                                <p className="text-[10px] text-blue-600">
+                                  Application will continue on the official government portal
+                                </p>
+                              </div>
+                            </div>
+                            <a
+                              href={portal.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="mt-2 inline-flex items-center gap-1 px-3 py-1.5 bg-blue-900 text-white rounded-md text-xs font-medium hover:bg-blue-800 transition-colors"
+                            >
+                              Continue to {portal.name}
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
+                        )}
 
-                      {step.status === "failed" && (
-                        <div className="flex items-center gap-2">
+                        {/* Action buttons */}
+                        {step.status === "in_progress" && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleShowConsent(step);
                             }}
-                            className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors"
+                            disabled={submitting === step.id}
+                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#FF9933] to-[#e88a2d] text-white rounded-lg text-sm font-medium hover:from-[#e88a2d] hover:to-[#FF9933] transition-all disabled:opacity-50 shadow-sm"
                           >
-                            <RotateCw className="w-4 h-4" />
-                            Retry Submission
+                            {submitting === step.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Send className="w-4 h-4" />
+                            )}
+                            Submit Application
                           </button>
-                          {step.retryCount > 0 && (
-                            <span className="text-xs text-gray-500">
-                              Attempt {step.retryCount} of 3
-                            </span>
-                          )}
-                        </div>
-                      )}
+                        )}
 
-                      {/* Integration details */}
-                      {step.integrationRequests &&
-                        step.integrationRequests.length > 0 && (
-                          <div className="mt-3 pt-3 border-t border-gray-200">
-                            <p className="text-xs font-medium text-gray-500 mb-2">
-                              Integration Details
-                            </p>
-                            {step.integrationRequests.map((req, ri) => (
-                              <div
-                                key={ri}
-                                className="flex items-center gap-2 text-xs text-gray-600"
-                              >
-                                <span className="font-mono text-gray-400">
-                                  {req.correlationId.slice(0, 8)}
-                                </span>
-                                <span
-                                  className={
-                                    req.status === "success"
-                                      ? "text-green-600"
-                                      : "text-red-600"
-                                  }
-                                >
-                                  {req.status === "success" ? "200 OK" : "Failed"}
-                                </span>
-                                <span className="text-gray-400">
-                                  {req.latencyMs}ms
-                                </span>
-                              </div>
-                            ))}
+                        {step.status === "failed" && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleShowConsent(step);
+                              }}
+                              className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors"
+                            >
+                              <RotateCw className="w-4 h-4" />
+                              Retry Submission
+                            </button>
+                            {step.retryCount > 0 && (
+                              <span className="text-xs text-gray-500">
+                                Attempt {step.retryCount} of 3
+                              </span>
+                            )}
                           </div>
                         )}
-                    </div>
-                  )}
-                </div>
-              ))}
+
+                        {step.status === "waiting" && (
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <Lock className="w-3 h-3" />
+                            This step is blocked by prerequisite steps. Complete them first.
+                          </div>
+                        )}
+
+                        {(step.status === "submitted" || step.status === "reviewing") && (
+                          <div className="flex items-center gap-2 text-xs text-blue-600">
+                            <Clock className="w-3 h-3" />
+                            Application submitted. Waiting for government processing.
+                            {step.externalApplicationId && (
+                              <span className="font-mono text-blue-500">
+                                ({step.externalApplicationId})
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Integration details */}
+                        {step.integrationRequests &&
+                          step.integrationRequests.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-gray-200">
+                              <p className="text-xs font-medium text-gray-500 mb-2">
+                                Integration Details
+                              </p>
+                              {step.integrationRequests.map((req, ri) => (
+                                <div
+                                  key={ri}
+                                  className="flex items-center gap-2 text-xs text-gray-600"
+                                >
+                                  <span className="font-mono text-gray-400">
+                                    {req.correlationId.slice(0, 8)}
+                                  </span>
+                                  <span
+                                    className={
+                                      req.status === "success"
+                                        ? "text-green-600"
+                                        : "text-red-600"
+                                    }
+                                  >
+                                    {req.status === "success" ? "200 OK" : "Failed"}
+                                  </span>
+                                  <span className="text-gray-400">
+                                    {req.latencyMs}ms
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -412,7 +554,7 @@ export default function JourneyDetailPage({
                   Data Sharing Consent
                 </h3>
                 <p className="text-xs text-gray-500">
-                  {typeof consentStep.service.department === 'string' ? consentStep.service.department : consentStep.service.department.name}
+                  {getDeptName(consentStep.service.department)}
                 </p>
               </div>
             </div>
@@ -420,7 +562,7 @@ export default function JourneyDetailPage({
             <div className="space-y-4 mb-6">
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <p className="text-xs font-medium text-green-800 mb-2">
-                  Data that will be shared:
+                  ✅ Data that will be shared:
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {["Name", "Address", "City", "State", "Business Name", "Business Type"].map(
@@ -439,7 +581,7 @@ export default function JourneyDetailPage({
 
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <p className="text-xs font-medium text-red-800 mb-2">
-                  Data that will NOT be shared:
+                  🔒 Data that will NOT be shared:
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {["PAN Number", "Aadhaar Number", "GST Number", "Other Documents"].map(
@@ -471,7 +613,7 @@ export default function JourneyDetailPage({
               </button>
               <button
                 onClick={handleConsentGrant}
-                className="flex-1 px-4 py-2.5 bg-blue-900 text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors"
+                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-[#FF9933] to-[#e88a2d] text-white rounded-lg text-sm font-medium hover:from-[#e88a2d] hover:to-[#FF9933] transition-all shadow-md"
               >
                 Allow & Submit
               </button>

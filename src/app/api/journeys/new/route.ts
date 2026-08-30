@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { MOCK_JOURNEYS, MOCK_SERVICES } from "@/lib/mock-data";
+import { getAIEngine } from "@/lib/ai";
 
 async function getUserFromCookie() {
   try {
@@ -33,16 +34,61 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Simulate intent analysis
-    const isRestaurant = intent.toLowerCase().includes("restaurant") || intent.toLowerCase().includes("food");
-    const services = isRestaurant
-      ? MOCK_SERVICES.filter((s) => ["business_registration", "food_license", "fire_safety"].includes(s.code))
-      : MOCK_SERVICES.filter((s) => ["business_registration", "tax_registration", "municipal_permission"].includes(s.code));
+    // Use the AI engine to analyze the intent
+    const engine = getAIEngine();
+    const { response, contextId } = await engine.chat(user.userId, intent);
+
+    // Extract intent and entities from the AI response
+    const intentCategory = response.metadata?.intent || "GENERAL_INQUIRY";
+    const entities = response.metadata?.entities;
+
+    // Map intent to service codes using the AI's knowledge
+    const serviceCodeMap: Record<string, string[]> = {
+      OPEN_RESTAURANT: [
+        "business_registration", "tax_registration", "food_license",
+        "municipal_permission", "fire_safety", "shop_establishment",
+      ],
+      OPEN_FOOD_BUSINESS: [
+        "business_registration", "tax_registration", "food_license",
+        "municipal_permission",
+      ],
+      START_BUSINESS: [
+        "business_registration", "tax_registration", "municipal_permission",
+        "shop_establishment",
+      ],
+      REGISTER_COMPANY: [
+        "business_registration", "tax_registration", "shop_establishment",
+      ],
+      GET_PASSPORT: ["passport"],
+      GET_DRIVING_LICENSE: ["driving_license"],
+      UPDATE_AADHAAR: ["aadhaar_update"],
+      GET_PAN_CARD: ["pan_card"],
+      REGISTER_VOTER_ID: ["voter_id"],
+      PROPERTY_REGISTRATION: ["property_registration", "municipal_permission"],
+      BIRTH_CERTIFICATE: ["birth_certificate"],
+      MARRIAGE_REGISTRATION: ["marriage_registration"],
+      INCOME_CERTIFICATE: ["income_certificate"],
+      CASTE_CERTIFICATE: ["caste_certificate"],
+      RATION_CARD: ["ration_card"],
+    };
+
+    const serviceCodes = serviceCodeMap[intentCategory] || [
+      "business_registration", "tax_registration", "municipal_permission",
+    ];
+
+    const services = MOCK_SERVICES.filter((s) =>
+      serviceCodes.includes(s.code)
+    );
 
     const journeyId = `journey-${Date.now()}`;
     const newJourney = {
       id: journeyId,
       intent,
+      intentParsed: JSON.stringify({
+        intent: intentCategory,
+        entities,
+        contextId,
+      }),
       status: "in_progress",
       progress: 0,
       createdAt: new Date().toISOString(),
@@ -76,7 +122,9 @@ export async function POST(request: NextRequest) {
         createdAt: newJourney.createdAt,
       },
       analysis: {
-        intent: isRestaurant ? "restaurant_business_setup" : "business_registration",
+        intent: intentCategory,
+        confidence: response.metadata?.confidence || 0.8,
+        entities,
         totalSteps: services.length,
         estimatedTotalDays: services.reduce((sum, s) => sum + s.estimatedDays, 0),
       },
