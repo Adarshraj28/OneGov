@@ -20,6 +20,11 @@ export type IntentCategory =
   | "INCOME_CERTIFICATE"
   | "CASTE_CERTIFICATE"
   | "RATION_CARD"
+  | "GOVERNMENT_SCHEME"
+  | "RTI_INFO"
+  | "FILE_GRIEVANCE"
+  | "GST_INFO"
+  | "GENERAL_HELP"
   | "GENERAL_INQUIRY"
   | "UNKNOWN";
 

@@ -8,7 +8,7 @@ import type {
   ExtractedEntities,
   WorkflowData,
 } from "./types";
-import { MockAIProvider } from "./mock-provider";
+import { MockAIProviderV2 as MockAIProvider } from "./mock-provider-v2";
 import { getConversationManager } from "./conversation";
 import { getRAGRetriever } from "./rag";
 
@@ -146,7 +146,7 @@ export type {
   AIResponseType,
 } from "./types";
 
-export { MockAIProvider } from "./mock-provider";
+export { MockAIProviderV2 as MockAIProvider } from "./mock-provider-v2";
 export { getConversationManager } from "./conversation";
 export { getRAGRetriever } from "./rag";
 export { SERVICE_KNOWLEDGE_BASE } from "./rag";
