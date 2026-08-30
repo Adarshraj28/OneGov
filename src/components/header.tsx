@@ -18,6 +18,7 @@ import {
   LayoutDashboard,
   Activity,
   Link2,
+  Phone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/language-context";
@@ -64,6 +65,7 @@ export default function Header() {
     { href: "/citizen/journey", label: t.myJourneys, icon: FileText },
     { href: "/citizen/documents", label: t.documents, icon: FolderOpen },
     { href: "/citizen/profile", label: t.profile, icon: User },
+    { href: "/departments", label: "Departments", icon: LayoutDashboard },
   ];
 
   const officerLinks = [
@@ -98,8 +100,36 @@ export default function Header() {
         <div className="flex-1 bg-white" />
         <div className="flex-1 bg-[#138808]" />
       </div>
+
+      {/* Government of India Identity Bar */}
+      <div className="bg-blue-900 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1.5">
+          <div className="flex items-center justify-between text-[10px] sm:text-xs">
+            <div className="flex items-center gap-2">
+              {/* Ashoka Emblem (SVG) */}
+              <div className="flex items-center gap-1.5">
+                <svg viewBox="0 0 40 40" className="w-6 h-6 sm:w-7 sm:h-7" fill="none">
+                  <circle cx="20" cy="20" r="18" stroke="#FF9933" strokeWidth="1.5" fill="none" />
+                  <circle cx="20" cy="20" r="14" stroke="white" strokeWidth="0.5" fill="none" />
+                  <text x="20" y="22" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold" fontFamily="serif">🦁</text>
+                </svg>
+                <div className="leading-tight">
+                  <div className="font-semibold text-[10px] sm:text-xs tracking-wide">भारत सरकार | Government of India</div>
+                  <div className="text-[8px] sm:text-[9px] text-blue-200">Ministry of Electronics &amp; Information Technology</div>
+                </div>
+              </div>
+            </div>
+            <div className="hidden sm:flex items-center gap-2 text-blue-200">
+              <Phone className="w-3 h-3" />
+              <span className="font-medium text-white">1800-11-0031</span>
+              <span className="text-blue-300">Toll Free</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+        <div className="flex justify-between h-14">
           {/* Logo */}
           <div className="flex items-center">
             <Link
@@ -111,9 +141,12 @@ export default function Header() {
                   <span className="text-white font-bold text-sm">OG</span>
                 </div>
               </div>
-              <span className="text-xl font-bold text-gray-900">
-                ONE<span className="text-[#FF9933]">GOV</span>
-              </span>
+              <div className="leading-tight">
+                <span className="text-lg font-bold text-gray-900 block leading-tight">
+                  ONE<span className="text-[#FF9933]">GOV</span>
+                </span>
+                <span className="text-[8px] text-gray-500 hidden sm:block">एक सरकार — एक मंच | One Gov, One Platform</span>
+              </div>
             </Link>
 
             {/* Desktop Nav */}

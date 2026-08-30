@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/header";
+import GovFooter from "@/components/gov-footer";
 import {
   CheckCircle2,
   Clock,
@@ -396,6 +397,34 @@ export default function JourneyDetailPage({
                           {step.service.description}
                         </p>
 
+                        {/* Fee & Timeline */}
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                          <div className="bg-gray-100 rounded-lg p-2.5">
+                            <p className="text-[10px] font-medium text-gray-500">Government Fee</p>
+                            <p className="text-sm font-bold text-gray-900">
+                              {step.service.code === "food_license" ? "₹2,000 — ₹7,500" :
+                               step.service.code === "business_registration" ? "₹5,000 — ₹15,000" :
+                               step.service.code === "tax_registration" ? "₹0 — ₹1,000" :
+                               step.service.code === "passport" ? "₹1,500 — ₹2,000" :
+                               step.service.code === "driving_license" ? "₹200 — ₹1,000" :
+                               step.service.code === "municipal_permission" ? "₹500 — ₹5,000" :
+                               step.service.code === "fire_safety" ? "₹1,000 — ₹3,000" :
+                               step.service.code === "aadhaar_update" ? "₹50" :
+                               step.service.code === "pan_card" ? "₹107 — ₹1,020" :
+                               step.service.code === "voter_id" ? "Free" :
+                               "₹0 — ₹5,000"}
+                            </p>
+                            <p className="text-[9px] text-gray-400">May vary by state/category</p>
+                          </div>
+                          <div className="bg-gray-100 rounded-lg p-2.5">
+                            <p className="text-[10px] font-medium text-gray-500">Estimated Time</p>
+                            <p className="text-sm font-bold text-gray-900">
+                              ~{step.service.estimatedDays} working days
+                            </p>
+                            <p className="text-[9px] text-gray-400">From submission date</p>
+                          </div>
+                        </div>
+
                         {/* Required Documents */}
                         <div className="mb-3">
                           <p className="text-xs font-medium text-gray-500 mb-1">
@@ -540,6 +569,8 @@ export default function JourneyDetailPage({
           </div>
         </div>
       </main>
+
+      <GovFooter />
 
       {/* Consent Modal */}
       {consentStep && (

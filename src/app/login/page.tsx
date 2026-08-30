@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, Mail, Eye, EyeOff, Shield } from "lucide-react";
-import PMModiBanner from "@/components/pm-modi-banner";
+import { Lock, Mail, Eye, EyeOff, Shield, Phone } from "lucide-react";
 import LanguageSwitcher from "@/components/language-switcher";
 import { useLanguage } from "@/lib/language-context";
 
@@ -80,10 +79,24 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Tricolor top bar */}
-      <div className="flex h-1.5">
+      <div className="flex h-1">
         <div className="flex-1 bg-[#FF9933]" />
         <div className="flex-1 bg-white" />
         <div className="flex-1 bg-[#138808]" />
+      </div>
+
+      {/* Government Identity Bar */}
+      <div className="bg-blue-900 text-white">
+        <div className="max-w-md mx-auto px-4 py-1.5">
+          <div className="flex items-center justify-center gap-2 text-xs">
+            <svg viewBox="0 0 40 40" className="w-5 h-5" fill="none">
+              <circle cx="20" cy="20" r="18" stroke="#FF9933" strokeWidth="1.5" fill="none" />
+              <circle cx="20" cy="20" r="14" stroke="white" strokeWidth="0.5" fill="none" />
+              <text x="20" y="22" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold" fontFamily="serif">🦁</text>
+            </svg>
+            <span className="font-semibold text-[10px]">भारत सरकार | Government of India</span>
+          </div>
+        </div>
       </div>
 
       <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -103,6 +116,7 @@ export default function LoginPage() {
             <h1 className="text-3xl font-bold text-gray-900">
               ONE<span className="text-[#FF9933]">GOV</span>
             </h1>
+            <p className="mt-1 text-xs text-gray-500">एक सरकार — एक मंच</p>
             <p className="mt-2 text-sm text-gray-600">
               {t.loginSubtitle}
             </p>
@@ -112,9 +126,6 @@ export default function LoginPage() {
               <span className="w-8 h-1 rounded-full bg-[#138808]" />
             </div>
           </div>
-
-          {/* PM Modi Banner */}
-          <PMModiBanner variant="compact" />
 
           {/* Login Form */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
@@ -213,14 +224,19 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="text-center">
+          {/* Helpline & Footer */}
+          <div className="text-center space-y-3">
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+              <Phone className="w-4 h-4 text-gray-400" />
+              <span>Toll-Free Helpline: <strong className="text-gray-900">1800-11-0031</strong></span>
+            </div>
             <p className="text-xs text-gray-500">
-              SIH 2026 Prototype — Government of Maharashtra
-              <br />
-              Smart India Hackathon Problem Statement SIH26129
+              A Government of India Initiative under Digital India Programme
             </p>
-            <div className="flex justify-center gap-1 mt-2">
+            <p className="text-xs text-gray-400">
+              SIH 2026 Prototype — Smart India Hackathon Problem Statement SIH26129
+            </p>
+            <div className="flex justify-center gap-1">
               <span className="w-6 h-1 rounded-full bg-[#FF9933]" />
               <span className="w-6 h-1 rounded-full bg-gray-300" />
               <span className="w-6 h-1 rounded-full bg-[#138808]" />
@@ -230,7 +246,7 @@ export default function LoginPage() {
       </div>
 
       {/* Tricolor bottom bar */}
-      <div className="flex h-1.5">
+      <div className="flex h-1">
         <div className="flex-1 bg-[#FF9933]" />
         <div className="flex-1 bg-white" />
         <div className="flex-1 bg-[#138808]" />

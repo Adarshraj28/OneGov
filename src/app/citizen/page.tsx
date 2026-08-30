@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/header";
+import GovFooter from "@/components/gov-footer";
 import PMModiBanner from "@/components/pm-modi-banner";
 import AIChat from "@/components/ai-chat";
 import {
@@ -255,7 +256,7 @@ export default function CitizenHome() {
           </div>
         </div>
 
-        {/* Government of India Footer Banner */}
+        {/* Government Trust Banner */}
         <div className="mt-10 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 rounded-xl p-6 text-center">
           <div className="flex justify-center gap-1 mb-3">
             <span className="w-12 h-1 rounded-full bg-[#FF9933]" />
@@ -268,11 +269,19 @@ export default function CitizenHome() {
           <p className="text-blue-200 text-sm mt-2">
             {t.govFooterSub}
           </p>
-          <p className="text-blue-300 text-xs mt-1">
+          <div className="flex flex-wrap items-center justify-center gap-4 mt-3 text-xs text-blue-300">
+            <span>📞 Toll-Free: <strong className="text-white">1800-11-0031</strong></span>
+            <span>|</span>
+            <a href="/departments" className="hover:text-white transition-colors underline">Department Directory</a>
+            <span>|</span>
+            <a href="/track" className="hover:text-white transition-colors underline">Track Application</a>
+          </div>
+          <p className="text-blue-400 text-[10px] mt-2">
             {t.sihPrototype}
           </p>
         </div>
       </main>
+      <GovFooter />
     </div>
   );
 }

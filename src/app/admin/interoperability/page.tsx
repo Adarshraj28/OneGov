@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Header from "@/components/header";
+import GovFooter from "@/components/gov-footer";
 import PMModiBanner from "@/components/pm-modi-banner";
 import {
   Loader2,
@@ -390,18 +391,8 @@ export default function InteroperabilityPage() {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="mt-8 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 rounded-xl p-4 text-center">
-          <div className="flex justify-center gap-1 mb-2">
-            <span className="w-8 h-1 rounded-full bg-[#FF9933]" />
-            <span className="w-8 h-1 rounded-full bg-white" />
-            <span className="w-8 h-1 rounded-full bg-[#138808]" />
-          </div>
-          <p className="text-white text-sm font-medium">
-            🇮🇳 ONEGOV Interoperability Framework — Digital India Initiative
-          </p>
-        </div>
       </main>
+      <GovFooter />
     </div>
   );
 }
