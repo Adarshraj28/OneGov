@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import Header from "@/components/header";
 import GovFooter from "@/components/gov-footer";
 import {
@@ -23,7 +22,6 @@ import {
   Fingerprint,
   Building2,
   MapPin,
-  FingerprintIcon,
   Smartphone,
   ArrowRight,
   BadgeCheck,
@@ -32,6 +30,17 @@ import {
   User,
   Calendar,
   Users,
+  Lock,
+  Unlock,
+  Globe,
+  ServerCrash,
+  Zap,
+  ExternalLink,
+  CheckCircle,
+  BookOpen,
+  Car,
+  Vote,
+  Receipt,
 } from "lucide-react";
 
 interface Document {
@@ -40,13 +49,15 @@ interface Document {
   name: string;
   fileName: string;
   fileSize: string;
-  verificationStatus: "verified" | "pending" | "rejected" | "uploaded" | "aadhaar_verified";
+  verificationStatus: "verified" | "pending" | "rejected" | "uploaded" | "aadhaar_verified" | "extracting";
   category: string;
   uploadedAt: string;
   extractedData?: Record<string, string>;
   usedIn?: string[];
   source: "aadhaar" | "uploaded" | "government" | "extracted";
   aadhaarLinked?: boolean;
+  portal?: string;
+  verificationId?: string;
 }
 
 interface AadhaarStatus {
@@ -76,22 +87,61 @@ const SOURCE_CONFIG = {
   aadhaar: { label: "Aadhaar Verified", color: "text-green-700", bg: "bg-green-50", border: "border-green-200", icon: Shield },
   government: { label: "Government Issued", color: "text-blue-700", bg: "bg-blue-50", border: "border-blue-200", icon: BadgeCheck },
   uploaded: { label: "Uploaded", color: "text-gray-700", bg: "bg-gray-50", border: "border-gray-200", icon: Upload },
-  extracted: { label: "Auto-Extracted", color: "text-purple-700", bg: "bg-purple-50", border: "border-purple-200", icon: Link2 },
+  extracted: { label: "Extracted from Gov Portal", color: "text-purple-700", bg: "bg-purple-50", border: "border-purple-200", icon: Globe },
 };
 
-const DOC_TYPES = [
-  { type: "aadhaar", name: "Aadhaar Card", category: "identity", requiredFor: ["All government services"], aadhaarSource: true },
-  { type: "pan", name: "PAN Card", category: "identity", requiredFor: ["GST", "Business Registration"], aadhaarSource: false },
-  { type: "address_proof", name: "Address Proof", category: "address", requiredFor: ["Passport", "Driving License", "Voter ID"], aadhaarSource: false },
-  { type: "business_cert", name: "Business Certificate", category: "business", requiredFor: ["FSSAI License", "Municipal Permission"], aadhaarSource: false },
-  { type: "photograph", name: "Passport Photo", category: "identity", requiredFor: ["Passport", "Driving License", "Voter ID"], aadhaarSource: false },
-  { type: "income_proof", name: "Income Proof", category: "financial", requiredFor: ["Income Certificate", "Subsidies"], aadhaarSource: false },
-  { type: "birth_proof", name: "Birth Certificate", category: "identity", requiredFor: ["Passport", "School Admission"], aadhaarSource: false },
-  { type: "driving_license", name: "Driving License", category: "identity", requiredFor: ["Vehicle Purchase", "Address Proof"], aadhaarSource: false },
+const PORTAL_CONFIG: Record<string, { name: string; url: string; icon: typeof FileText; color: string }> = {
+  uidai: { name: "UIDAI (Aadhaar)", url: "https://uidai.gov.in", icon: Fingerprint, color: "text-blue-600" },
+  nsdl: { name: "NSDL (PAN)", url: "https://www.onlineservices.nsdl.com", icon: CreditCard, color: "text-green-600" },
+  mea: { name: "MEA (Passport)", url: "https://www.passportindia.gov.in", icon: BookOpen, color: "text-indigo-600" },
+  morth: { name: "Parivahan (DL)", url: "https://parivahan.gov.in", icon: Car, color: "text-orange-600" },
+  eci: { name: "ECI (Voter ID)", url: "https://www.nvsp.in", icon: Vote, color: "text-red-600" },
+  mca: { name: "MCA (Business)", url: "https://www.mca.gov.in", icon: Building2, color: "text-purple-600" },
+  gstn: { name: "GSTN (GST)", url: "https://www.gst.gov.in", icon: Receipt, color: "text-teal-600" },
+};
+
+const EXTRACTABLE_DOCS = [
+  { portal: "uidai", type: "aadhaar", name: "Aadhaar Card", category: "identity", icon: Fingerprint },
+  { portal: "nsdl", type: "pan", name: "PAN Card", category: "identity", icon: CreditCard },
+  { portal: "mea", type: "passport", name: "Passport", category: "identity", icon: BookOpen },
+  { portal: "morth", type: "driving_license", name: "Driving License", category: "identity", icon: Car },
+  { portal: "eci", type: "voter_id", name: "Voter ID", category: "identity", icon: Vote },
+  { portal: "mca", type: "business_cert", name: "Certificate of Incorporation", category: "business", icon: Building2 },
+  { portal: "gstn", type: "gst", name: "GST Registration", category: "financial", icon: Receipt },
 ];
 
+function extractDataToDoc(doc: Record<string, string & Record<string, string>> & { type: string }, aadhaarVerified: boolean): Document {
+  const portalKey = Object.entries(PORTAL_CONFIG).find(([_, v]) => v.name.toLowerCase().includes(doc.verificationSource?.toLowerCase() || ""))?.[0] || "uidai";
+  const docType = EXTRACTABLE_DOCS.find((d) => d.portal === portalKey) || EXTRACTABLE_DOCS[0];
+  const cat = CATEGORY_COLORS[docType.category] || CATEGORY_COLORS.other;
+
+  const { type, verificationSource, verificationId, extractedAt, ...extractedData } = doc;
+
+  return {
+    id: `doc-${docType.type}-${Date.now()}`,
+    type: docType.type,
+    name: docType.name,
+    fileName: `${docType.type}_extracted.xml`,
+    fileSize: `${(JSON.stringify(extractedData).length / 1024).toFixed(1)} KB`,
+    verificationStatus: aadhaarVerified ? "aadhaar_verified" : "verified",
+    category: docType.category,
+    uploadedAt: extractedAt || new Date().toISOString(),
+    extractedData: extractedData as Record<string, string>,
+    usedIn: docType.type === "aadhaar" ? ["All government services"] :
+            docType.type === "pan" ? ["GST Registration", "Business Registration", "Food License"] :
+            docType.type === "passport" ? ["International Travel", "Identity Proof"] :
+            docType.type === "driving_license" ? ["Address Proof", "Vehicle Purchase"] :
+            docType.type === "voter_id" ? ["Address Proof", "Identity Proof"] :
+            docType.type === "business_cert" ? ["GST Registration", "FSSAI License"] :
+            ["GST Filing", "Business Compliance"],
+    source: aadhaarVerified ? "aadhaar" : "extracted",
+    aadhaarLinked: aadhaarVerified,
+    portal: portalKey,
+    verificationId: verificationId,
+  };
+}
+
 export default function CitizenDocumentsPage() {
-  const router = useRouter();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [aadhaarStatus, setAadhaarStatus] = useState<AadhaarStatus | null>(null);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
@@ -101,166 +151,116 @@ export default function CitizenDocumentsPage() {
   const [otpHint, setOtpHint] = useState("");
   const [verifyMessage, setVerifyMessage] = useState("");
   const [extractedData, setExtractedData] = useState<Record<string, string> | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
   const [loading, setLoading] = useState(true);
+  const [extracting, setExtracting] = useState(false);
+  const [extractProgress, setExtractProgress] = useState<string[]>([]);
+  const [documentsExtracted, setDocumentsExtracted] = useState(false);
+  const [showExtractModal, setShowExtractModal] = useState(false);
 
-  // Load Aadhaar status and documents on mount
   useEffect(() => {
-    Promise.all([
-      fetch("/api/verify/aadhaar").then((r) => r.json()),
-      fetch("/api/auth/profile").then((r) => r.json()),
-    ]).then(([verifyData, profileData]) => {
-      setAadhaarStatus(verifyData);
-
-      // Build documents from profile data + verification status
-      const profile = profileData.user?.profile || {};
-      const docs: Document[] = [];
-
-      if (verifyData.aadhaarVerified) {
-        docs.push({
-          id: "doc-aadhaar",
-          type: "aadhaar",
-          name: "Aadhaar Card",
-          fileName: "aadhaar_verified.xml",
-          fileSize: "3.2 KB",
-          verificationStatus: "aadhaar_verified",
-          category: "identity",
-          uploadedAt: verifyData.verifiedAt || new Date().toISOString(),
-          extractedData: verifyData.extractedFields || {},
-          usedIn: ["Business Registration", "Passport Application", "GST Registration", "PAN Card", "Driving License", "Voter ID"],
-          source: "aadhaar",
-          aadhaarLinked: true,
-        });
-      }
-
-      if (profile.panNumber) {
-        docs.push({
-          id: "doc-pan",
-          type: "pan",
-          name: "PAN Card",
-          fileName: `pan_${profile.panNumber}.xml`,
-          fileSize: "1.8 KB",
-          verificationStatus: verifyData.aadhaarVerified ? "verified" : "uploaded",
-          category: "identity",
-          uploadedAt: "2026-08-12T14:30:00Z",
-          extractedData: {
-            name: profile.name?.toUpperCase() || "",
-            pan: profile.panNumber || "",
-            dob: profile.dateOfBirth || "",
-            fatherName: profile.fatherName?.toUpperCase() || "",
-          },
-          usedIn: ["GST Registration", "Business Registration", "Food License"],
-          source: verifyData.aadhaarVerified ? "extracted" : "uploaded",
-          aadhaarLinked: verifyData.aadhaarVerified,
-        });
-      }
-
-      if (profile.address) {
-        docs.push({
-          id: "doc-address",
-          type: "address_proof",
-          name: "Address Proof (from Aadhaar)",
-          fileName: "address_aadhaar.xml",
-          fileSize: "2.1 KB",
-          verificationStatus: verifyData.aadhaarVerified ? "aadhaar_verified" : "uploaded",
-          category: "address",
-          uploadedAt: verifyData.verifiedAt || "2026-08-15T09:00:00Z",
-          extractedData: {
-            name: profile.name || "",
-            address: profile.address || "",
-            city: profile.city || "",
-            state: profile.state || "",
-            pincode: profile.pincode || "",
-          },
-          usedIn: ["Passport Application", "Driving License", "Voter ID"],
-          source: verifyData.aadhaarVerified ? "aadhaar" : "uploaded",
-          aadhaarLinked: verifyData.aadhaarVerified,
-        });
-      }
-
-      if (profile.voterId) {
-        docs.push({
-          id: "doc-voter",
-          type: "voter_id",
-          name: "Voter ID",
-          fileName: `voter_${profile.voterId}.xml`,
-          fileSize: "1.5 KB",
-          verificationStatus: "verified",
-          category: "identity",
-          uploadedAt: "2026-08-20T10:00:00Z",
-          extractedData: { voterId: profile.voterId, name: profile.name || "" },
-          usedIn: ["Address Proof"],
-          source: "government",
-        });
-      }
-
-      if (profile.passportNumber) {
-        docs.push({
-          id: "doc-passport",
-          type: "passport",
-          name: "Passport",
-          fileName: `passport_${profile.passportNumber}.xml`,
-          fileSize: "2.8 KB",
-          verificationStatus: "verified",
-          category: "identity",
-          uploadedAt: "2026-08-22T11:00:00Z",
-          extractedData: { passport: profile.passportNumber, name: profile.name || "" },
-          usedIn: ["International Travel", "Identity Proof"],
-          source: "government",
-        });
-      }
-
-      if (profile.drivingLicense) {
-        docs.push({
-          id: "doc-dl",
-          type: "driving_license",
-          name: "Driving License",
-          fileName: `dl_${profile.drivingLicense}.xml`,
-          fileSize: "2.2 KB",
-          verificationStatus: "verified",
-          category: "identity",
-          uploadedAt: "2026-08-25T14:00:00Z",
-          extractedData: { dl: profile.drivingLicense, name: profile.name || "" },
-          usedIn: ["Address Proof", "Vehicle Purchase"],
-          source: "government",
-        });
-      }
-
-      if (profile.businessName) {
-        docs.push({
-          id: "doc-business",
-          type: "business_cert",
-          name: "Certificate of Incorporation",
-          fileName: "incorporation_cert.pdf",
-          fileSize: "1.2 MB",
-          verificationStatus: "verified",
-          category: "business",
-          uploadedAt: "2026-08-18T11:00:00Z",
-          extractedData: {
-            cin: profile.cinNumber || "U56100MH2024PTC123456",
-            company: profile.businessName || "",
-            type: profile.businessType?.replace(/_/g, " ") || "",
-            date: profile.businessRegDate || "",
-          },
-          usedIn: ["GST Registration", "FSSAI License", "Municipal Permission"],
-          source: "uploaded",
-        });
-      }
-
-      setDocuments(docs);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    fetchAadhaarStatus();
   }, []);
+
+  const fetchAadhaarStatus = async () => {
+    setLoading(true);
+    try {
+      const [verifyRes, extractRes] = await Promise.all([
+        fetch("/api/verify/aadhaar").then((r) => r.json()),
+        fetch("/api/verify/extract").then((r) => r.json()),
+      ]);
+      setAadhaarStatus(verifyRes);
+      setDocumentsExtracted(extractRes.documentsExtracted || false);
+
+      if (verifyRes.aadhaarVerified) {
+        // If Aadhaar verified but docs not extracted yet, auto-extract
+        if (!extractRes.documentsExtracted) {
+          // Don't auto-extract — let user click the button
+        }
+        // Load documents from profile
+        loadDocumentsFromProfile(verifyRes);
+      }
+    } catch {
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadDocumentsFromProfile = (verifyData: AadhaarStatus) => {
+    // Documents are loaded after extraction via the extract API
+    // For now, set basic Aadhaar doc
+    if (verifyData.aadhaarVerified && verifyData.extractedFields) {
+      const basicDoc: Document = {
+        id: "doc-aadhaar",
+        type: "aadhaar",
+        name: "Aadhaar Card",
+        fileName: "aadhaar_verified.xml",
+        fileSize: "3.2 KB",
+        verificationStatus: "aadhaar_verified",
+        category: "identity",
+        uploadedAt: verifyData.verifiedAt || new Date().toISOString(),
+        extractedData: verifyData.extractedFields,
+        usedIn: ["All government services"],
+        source: "aadhaar",
+        aadhaarLinked: true,
+        portal: "uidai",
+      };
+      setDocuments([basicDoc]);
+    }
+  };
+
+  const handleExtractAll = async () => {
+    setExtracting(true);
+    setExtractProgress([]);
+    setShowExtractModal(true);
+    setVerifyStep("verifying");
+
+    const aadhaarNum = aadhaarStatus?.aadhaarNumber || aadhaarInput;
+
+    try {
+      // Step by step extraction simulation for visual effect
+      for (const docType of EXTRACTABLE_DOCS) {
+        setExtractProgress((prev) => [...prev, `Extracting ${docType.name} from ${PORTAL_CONFIG[docType.portal]?.name || docType.portal}...`]);
+        await new Promise((r) => setTimeout(r, 600)); // Simulate network latency
+      }
+
+      // Actual API call
+      const res = await fetch("/api/verify/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aadhaarNumber: aadhaarNum }),
+      });
+
+      const data = await res.json();
+
+      if (data.success && data.documents) {
+        const extractedDocs = data.documents.map((doc: Record<string, string & Record<string, string>> & { type: string }) =>
+          extractDataToDoc(doc, aadhaarStatus?.aadhaarVerified || false)
+        );
+        setDocuments((prev) => {
+          const existingTypes = new Set(prev.map((d) => d.type));
+          const newDocs = extractedDocs.filter((d: Document) => !existingTypes.has(d.type));
+          return [...prev, ...newDocs];
+        });
+        setDocumentsExtracted(true);
+        setExtractProgress((prev) => [...prev, `✅ Successfully extracted ${data.extractedCount} documents from ${data.portalsSearched?.length || 7} government portals`]);
+        setVerifyStep("done");
+      } else {
+        setExtractProgress((prev) => [...prev, `❌ ${data.message || "Extraction failed"}`]);
+      }
+    } catch {
+      setExtractProgress((prev) => [...prev, "❌ Network error. Please try again."]);
+    } finally {
+      setExtracting(false);
+    }
+  };
 
   const handleVerifyAadhaar = async () => {
     if (verifyStep === "input") {
       setVerifyStep("otp");
       setVerifyMessage("Sending OTP to your registered mobile...");
-      // Auto-send OTP
       try {
         const res = await fetch("/api/verify/aadhaar", {
           method: "POST",
@@ -301,8 +301,12 @@ export default function CitizenDocumentsPage() {
             aadhaarNumber: aadhaarInput,
             extractedFields: data.profileUpdated,
           });
-          // Reload documents
-          setTimeout(() => window.location.reload(), 2000);
+          // Auto-extract documents after Aadhaar verification
+          setTimeout(() => {
+            setShowVerifyModal(false);
+            // Trigger document extraction automatically
+            setTimeout(() => handleExtractAll(), 500);
+          }, 2000);
         } else {
           setVerifyMessage(data.error || "Verification failed");
           setVerifyStep("otp");
@@ -329,30 +333,6 @@ export default function CitizenDocumentsPage() {
     financial: documents.filter((d) => d.category === "financial").length,
   };
 
-  const handleUpload = (typeName: string) => {
-    setUploading(true);
-    setTimeout(() => {
-      const docType = DOC_TYPES.find((d) => d.type === typeName);
-      if (!docType) return;
-      const newDoc: Document = {
-        id: `doc-${Date.now()}`,
-        type: docType.type,
-        name: docType.name,
-        fileName: `${docType.type}_upload.pdf`,
-        fileSize: `${Math.floor(Math.random() * 500 + 100)} KB`,
-        verificationStatus: "uploaded",
-        category: docType.category,
-        uploadedAt: new Date().toISOString(),
-        extractedData: { status: "Pending verification" },
-        usedIn: docType.requiredFor,
-        source: "uploaded",
-      };
-      setDocuments((prev) => [newDoc, ...prev]);
-      setUploading(false);
-      setShowUploadModal(false);
-    }, 1500);
-  };
-
   const handleDelete = (docId: string) => {
     setDocuments((prev) => prev.filter((d) => d.id !== docId));
     setSelectedDoc(null);
@@ -364,6 +344,7 @@ export default function CitizenDocumentsPage() {
     pending: { icon: Clock, label: "Pending", color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200" },
     uploaded: { icon: Clock, label: "Uploaded", color: "text-blue-700", bg: "bg-blue-50", border: "border-blue-200" },
     rejected: { icon: AlertCircle, label: "Rejected", color: "text-red-700", bg: "bg-red-50", border: "border-red-200" },
+    extracting: { icon: Loader2, label: "Extracting...", color: "text-purple-700", bg: "bg-purple-50", border: "border-purple-200" },
   };
 
   if (loading) {
@@ -377,6 +358,186 @@ export default function CitizenDocumentsPage() {
     );
   }
 
+  // ═══ LOCKED STATE — Aadhaar not verified ═══
+  if (!aadhaarStatus?.aadhaarVerified) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <Header />
+        <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Locked State */}
+          <div className="text-center py-12">
+            <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Lock className="w-10 h-10 text-amber-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Documents Vault</h1>
+            <p className="text-sm text-gray-500 mb-2">मेरे दस्तावेज़ — Secure Document Repository</p>
+            <p className="text-gray-600 max-w-md mx-auto mb-8">
+              To access your documents, you must first verify your identity using Aadhaar.
+              This ensures your data is securely linked to your government identity — just like DigiLocker.
+            </p>
+
+            <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-lg mx-auto mb-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                  <Fingerprint className="w-6 h-6 text-blue-600" />
+                </div>
+                <div className="text-left">
+                  <h3 className="font-semibold text-gray-900">Aadhaar Verification Required</h3>
+                  <p className="text-xs text-gray-500">Verify once, access all your government documents</p>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 text-left">
+                <h4 className="text-sm font-semibold text-blue-800 mb-2">How it works:</h4>
+                <div className="space-y-2">
+                  {[
+                    { step: "1", text: "Enter your 12-digit Aadhaar number", icon: Fingerprint },
+                    { step: "2", text: "OTP sent to your registered mobile", icon: Smartphone },
+                    { step: "3", text: "Identity verified via UIDAI", icon: Shield },
+                    { step: "4", text: "Documents auto-extracted from government portals", icon: Globe },
+                    { step: "5", text: "All documents available in your vault", icon: Unlock },
+                  ].map(({ step, text, icon: StepIcon }) => (
+                    <div key={step} className="flex items-center gap-2">
+                      <div className="w-5 h-5 bg-blue-200 rounded-full flex items-center justify-center text-[10px] font-bold text-blue-700 shrink-0">
+                        {step}
+                      </div>
+                      <StepIcon className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                      <span className="text-xs text-blue-700">{text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowVerifyModal(true)}
+                className="w-full py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <Fingerprint className="w-5 h-5" />
+                Verify Aadhaar Now
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-[10px] text-gray-400 max-w-sm mx-auto">
+              Your Aadhaar data is verified through UIDAI's secure OTP system. No data is stored permanently.
+              All document extraction happens in real-time from official government portals.
+            </p>
+          </div>
+
+          {/* Verify Modal */}
+          {showVerifyModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+              <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-green-600" />
+                    <h3 className="text-lg font-semibold text-gray-900">Aadhaar Verification</h3>
+                  </div>
+                  <button onClick={() => { setShowVerifyModal(false); setVerifyStep("input"); setAadhaarInput(""); setOtpInput(""); }} className="p-1 text-gray-400 hover:text-gray-600">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {verifyStep === "input" && (
+                  <div>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Enter your 12-digit Aadhaar number. An OTP will be sent to your registered mobile number.
+                    </p>
+                    <div className="mb-4">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Aadhaar Number</label>
+                      <div className="relative">
+                        <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          type="text"
+                          value={aadhaarInput}
+                          onChange={(e) => setAadhaarInput(e.target.value.replace(/\D/g, "").replace(/(.{4})/g, "$1 ").trim())}
+                          placeholder="XXXX XXXX XXXX"
+                          maxLength={14}
+                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 font-mono text-center text-lg tracking-widest"
+                        />
+                      </div>
+                      <p className="text-[10px] text-gray-400 mt-1">Demo: Use 4521 7890 3456 (Adarsh) or 8934 5612 7890 (Priya)</p>
+                    </div>
+                    <button
+                      onClick={handleVerifyAadhaar}
+                      disabled={aadhaarInput.replace(/\s/g, "").length !== 12}
+                      className="w-full py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      <Smartphone className="w-4 h-4" />
+                      Send OTP
+                    </button>
+                  </div>
+                )}
+
+                {verifyStep === "otp" && (
+                  <div>
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                      <p className="text-sm text-green-800">{verifyMessage}</p>
+                    </div>
+                    <div className="mb-4">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Enter OTP</label>
+                      <input
+                        type="text"
+                        value={otpInput}
+                        onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ""))}
+                        placeholder="6-digit OTP"
+                        maxLength={6}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 font-mono text-center text-lg tracking-[0.5em]"
+                        autoFocus
+                      />
+                      <p className="text-[10px] text-gray-400 mt-1">Demo OTP: 123456</p>
+                    </div>
+                    <button
+                      onClick={handleVerifyAadhaar}
+                      disabled={otpInput.length !== 6}
+                      className="w-full py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      <Shield className="w-4 h-4" />
+                      Verify &amp; Extract Data
+                    </button>
+                  </div>
+                )}
+
+                {verifyStep === "verifying" && (
+                  <div className="text-center py-8">
+                    <Loader2 className="w-10 h-10 text-green-600 animate-spin mx-auto mb-4" />
+                    <p className="text-sm text-gray-600">{verifyMessage}</p>
+                  </div>
+                )}
+
+                {verifyStep === "done" && (
+                  <div className="text-center py-4">
+                    <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <CheckCircle2 className="w-8 h-8 text-green-600" />
+                    </div>
+                    <h4 className="text-lg font-bold text-green-800 mb-2">Aadhaar Verified!</h4>
+                    <p className="text-sm text-gray-600 mb-4">{verifyMessage}</p>
+                    {extractedData && (
+                      <div className="bg-gray-50 rounded-lg p-3 text-left mb-4">
+                        <p className="text-xs font-semibold text-gray-600 mb-2">Extracted Data:</p>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {Object.entries(extractedData).filter(([k]) => k !== "photo").map(([key, value]) => (
+                            <div key={key} className="text-xs">
+                              <span className="text-gray-500 capitalize">{key.replace(/([A-Z])/g, " $1")}: </span>
+                              <span className="font-medium text-gray-900">{String(value)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-500">Extracting documents from government portals...</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </main>
+        <GovFooter />
+      </div>
+    );
+  }
+
+  // ═══ VERIFIED STATE — Show documents ═══
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />
@@ -385,106 +546,111 @@ export default function CitizenDocumentsPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">My Documents</h1>
-            <p className="text-sm text-gray-500 mt-1">मेरे दस्तावेज़ — Verify once with Aadhaar, use everywhere</p>
+            <p className="text-sm text-gray-500 mt-1">मेरे दस्तावेज़ — Verified &amp; Extracted from Government Portals</p>
           </div>
-          <button
-            onClick={() => setShowUploadModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-900 text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors"
-          >
-            <Upload className="w-4 h-4" />
-            Upload Document
-          </button>
+          <div className="flex items-center gap-2">
+            {!documentsExtracted && (
+              <button
+                onClick={handleExtractAll}
+                disabled={extracting}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+              >
+                {extracting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
+                Extract All Documents
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* ═══ Aadhaar Verification Banner ═══ */}
-        {aadhaarStatus?.aadhaarVerified ? (
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-5 mb-6">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center shrink-0">
-                <Shield className="w-6 h-6 text-green-600" />
+        {/* Aadhaar Verified Banner */}
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-5 mb-6">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center shrink-0">
+              <Shield className="w-6 h-6 text-green-600" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-sm font-bold text-green-800">🔐 Aadhaar Verified — DigiLocker Style</h3>
+                <span className="text-[10px] px-2 py-0.5 bg-green-200 text-green-800 rounded-full font-bold">
+                  <BadgeCheck className="w-3 h-3 inline mr-0.5" />
+                  VERIFIED
+                </span>
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-sm font-bold text-green-800">🔐 Aadhaar Verified — DigiLocker Style</h3>
-                  <span className="text-[10px] px-2 py-0.5 bg-green-200 text-green-800 rounded-full font-bold">
-                    <BadgeCheck className="w-3 h-3 inline mr-0.5" />
-                    VERIFIED
-                  </span>
-                </div>
-                <p className="text-xs text-green-700 mb-3">
-                  Your Aadhaar has been verified via OTP. The following data was automatically extracted and linked to your profile.
-                  This data is reused across all government services — no need to re-enter.
-                </p>
-                {/* Extracted data grid */}
-                {aadhaarStatus.extractedFields && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {Object.entries(aadhaarStatus.extractedFields).map(([key, value]) => (
-                      <div key={key} className="bg-white rounded-lg p-2 border border-green-200">
-                        <p className="text-[9px] text-green-600 uppercase font-medium">{key.replace(/([A-Z])/g, " $1")}</p>
-                        <p className="text-xs font-semibold text-gray-900 truncate">{String(value)}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div className="flex items-center gap-3 mt-3 text-[10px] text-green-600">
-                  <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Data extracted from UIDAI</span>
-                  <span>|</span>
-                  <span className="flex items-center gap-1"><Link2 className="w-3 h-3" /> Linked to {documents.filter((d) => d.aadhaarLinked).length} documents</span>
-                  <span>|</span>
-                  <span className="flex items-center gap-1"><RefreshCw className="w-3 h-3" /> Last verified: {new Date(aadhaarStatus.verifiedAt!).toLocaleDateString("en-IN")}</span>
-                </div>
+              <p className="text-xs text-green-700 mb-3">
+                Your identity has been verified through UIDAI. Documents are extracted from official government portals in real-time.
+                No manual uploads needed — your data flows directly from the source.
+              </p>
+              <div className="flex items-center gap-3 text-[10px] text-green-600">
+                <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Aadhaar verified via OTP</span>
+                <span>|</span>
+                <span className="flex items-center gap-1"><Globe className="w-3 h-3" /> {documents.length} documents extracted</span>
+                <span>|</span>
+                <span className="flex items-center gap-1"><RefreshCw className="w-3 h-3" /> Verified: {new Date(aadhaarStatus.verifiedAt!).toLocaleDateString("en-IN")}</span>
               </div>
             </div>
           </div>
-        ) : (
-          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5 mb-6">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
-                <Fingerprint className="w-6 h-6 text-amber-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-sm font-bold text-amber-800 mb-1">⚠️ Aadhaar Not Verified</h3>
-                <p className="text-xs text-amber-700 mb-3">
-                  Verify your Aadhaar to auto-extract your data (name, DOB, address, gender) and reuse it across all services.
-                  This is how DigiLocker works — verify once, use everywhere.
-                </p>
-                <button
-                  onClick={() => setShowVerifyModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors"
-                >
-                  <Fingerprint className="w-4 h-4" />
-                  Verify Aadhaar Now
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        </div>
 
-        {/* Verification Chain Visualization */}
-        {aadhaarStatus?.aadhaarVerified && (
+        {/* Verification Chain */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+          <h3 className="text-xs font-semibold text-gray-600 mb-3">📋 Verification Chain</h3>
+          <div className="flex items-center gap-2 text-xs overflow-x-auto pb-2">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 rounded-full text-green-700 shrink-0">
+              <Shield className="w-3.5 h-3.5" />
+              Aadhaar Verified
+            </div>
+            <ArrowRight className="w-4 h-4 text-gray-300 shrink-0" />
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full text-blue-700 shrink-0">
+              <Globe className="w-3.5 h-3.5" />
+              Portals Connected
+            </div>
+            <ArrowRight className="w-4 h-4 text-gray-300 shrink-0" />
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 border border-purple-200 rounded-full text-purple-700 shrink-0">
+              <Zap className="w-3.5 h-3.5" />
+              Data Extracted
+            </div>
+            <ArrowRight className="w-4 h-4 text-gray-300 shrink-0" />
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF9933]/10 border border-[#FF9933]/20 rounded-full text-[#FF9933] shrink-0">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Reused Across Services
+            </div>
+          </div>
+        </div>
+
+        {/* Government Portal Status */}
+        {documentsExtracted && (
           <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
-            <h3 className="text-xs font-semibold text-gray-600 mb-3">📋 Verification Chain</h3>
-            <div className="flex items-center gap-2 text-xs overflow-x-auto pb-2">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 rounded-full text-green-700 shrink-0">
-                <Shield className="w-3.5 h-3.5" />
-                Aadhaar Verified
-              </div>
-              <ArrowRight className="w-4 h-4 text-gray-300 shrink-0" />
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full text-blue-700 shrink-0">
-                <Fingerprint className="w-3.5 h-3.5" />
-                Data Extracted
-              </div>
-              <ArrowRight className="w-4 h-4 text-gray-300 shrink-0" />
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 border border-purple-200 rounded-full text-purple-700 shrink-0">
-                <Link2 className="w-3.5 h-3.5" />
-                Linked to Profile
-              </div>
-              <ArrowRight className="w-4 h-4 text-gray-300 shrink-0" />
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF9933]/10 border border-[#FF9933]/20 rounded-full text-[#FF9933] shrink-0">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Reused Across Services
-              </div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-semibold text-gray-600">🏛️ Connected Government Portals</h3>
+              <button
+                onClick={handleExtractAll}
+                disabled={extracting}
+                className="text-[10px] px-2 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-200 hover:bg-blue-100 transition-colors flex items-center gap-1"
+              >
+                <RefreshCw className={`w-3 h-3 ${extracting ? "animate-spin" : ""}`} />
+                Refresh All
+              </button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {Object.entries(PORTAL_CONFIG).map(([key, portal]) => {
+                const hasDoc = documents.some((d) => d.portal === key);
+                const PortalIcon = portal.icon;
+                return (
+                  <div
+                    key={key}
+                    className={`flex items-center gap-2 p-2 rounded-lg border text-xs transition-colors ${
+                      hasDoc ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"
+                    }`}
+                  >
+                    <PortalIcon className={`w-4 h-4 ${hasDoc ? "text-green-600" : "text-gray-400"}`} />
+                    <div className="min-w-0">
+                      <p className={`font-medium truncate ${hasDoc ? "text-green-800" : "text-gray-500"}`}>{portal.name.split("(")[0].trim()}</p>
+                      <p className="text-[9px] text-gray-400">{hasDoc ? "Connected" : "Not connected"}</p>
+                    </div>
+                    {hasDoc && <CheckCircle2 className="w-3 h-3 text-green-600 shrink-0" />}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -522,7 +688,7 @@ export default function CitizenDocumentsPage() {
             <FolderOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-600 font-medium">No documents found</p>
             <p className="text-xs text-gray-400 mt-1">
-              {documents.length === 0 ? "Verify your Aadhaar to auto-populate documents" : "Try a different search or category"}
+              {!documentsExtracted ? "Click 'Extract All Documents' to pull from government portals" : "Try a different search or category"}
             </p>
           </div>
         ) : (
@@ -548,7 +714,7 @@ export default function CitizenDocumentsPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-medium text-gray-900">{doc.name}</p>
                       <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${st.bg} ${st.color} ${st.border}`}>
-                        <StIcon className="w-3 h-3" />
+                        <StIcon className={`w-3 h-3 ${doc.verificationStatus === "extracting" ? "animate-spin" : ""}`} />
                         {st.label}
                       </span>
                       <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${src.bg} ${src.color} ${src.border}`}>
@@ -558,6 +724,7 @@ export default function CitizenDocumentsPage() {
                     </div>
                     <p className="text-xs text-gray-500 mt-0.5">
                       {doc.fileName} • {doc.fileSize} • {new Date(doc.uploadedAt).toLocaleDateString("en-IN")}
+                      {doc.verificationId && ` • ID: ${doc.verificationId}`}
                     </p>
                     {doc.usedIn && doc.usedIn.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1.5">
@@ -585,182 +752,86 @@ export default function CitizenDocumentsPage() {
           </div>
         )}
 
-        {/* Supported Document Types */}
-        <div className="mt-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Supported Documents</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {DOC_TYPES.map((docType) => {
-              const isUploaded = documents.some((d) => d.type === docType.type);
-              return (
-                <div
-                  key={docType.type}
-                  className={`bg-white rounded-lg border p-3 transition-colors ${
-                    isUploaded ? "border-green-200 bg-green-50/30" : "border-gray-200 hover:border-[#FF9933]/50"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-xs font-medium text-gray-700">{docType.name}</p>
-                    {isUploaded && <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />}
+        {/* Available for Extraction */}
+        {!documentsExtracted && aadhaarStatus?.aadhaarVerified && (
+          <div className="mt-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Documents Available for Extraction</h2>
+            <p className="text-xs text-gray-500 mb-4">Click below to extract each document from its official government portal</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {EXTRACTABLE_DOCS.map((docType) => {
+                const isExtracted = documents.some((d) => d.type === docType.type);
+                const portal = PORTAL_CONFIG[docType.portal];
+                const DocIcon = docType.icon;
+                return (
+                  <div
+                    key={docType.type}
+                    className={`bg-white rounded-lg border p-3 transition-colors ${
+                      isExtracted ? "border-green-200 bg-green-50/30" : "border-gray-200 hover:border-[#FF9933]/50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs font-medium text-gray-700">{docType.name}</p>
+                      {isExtracted && <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />}
+                    </div>
+                    <div className="flex items-center gap-1 mb-1">
+                      <DocIcon className="w-3 h-3 text-gray-400" />
+                      <p className="text-[9px] text-gray-400">{portal?.name || docType.portal}</p>
+                    </div>
+                    {!isExtracted && (
+                      <p className="text-[9px] text-amber-600">⚠️ Not yet extracted</p>
+                    )}
                   </div>
-                  <p className="text-[9px] text-gray-400">{docType.requiredFor.join(", ")}</p>
-                  {!isUploaded && (
-                    <button
-                      onClick={() => handleUpload(docType.type)}
-                      disabled={uploading}
-                      className="mt-1.5 text-[9px] px-2 py-0.5 bg-blue-900 text-white rounded font-medium hover:bg-blue-800 transition-colors disabled:opacity-50"
-                    >
-                      {uploading ? "..." : "Add"}
-                    </button>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </main>
 
-      {/* ═══ Aadhaar Verification Modal ═══ */}
-      {showVerifyModal && (
+      {/* Extraction Progress Modal */}
+      {showExtractModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-green-600" />
-                <h3 className="text-lg font-semibold text-gray-900">Aadhaar Verification</h3>
+                <Globe className="w-5 h-5 text-green-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Document Extraction</h3>
               </div>
-              <button onClick={() => { setShowVerifyModal(false); setVerifyStep("input"); setAadhaarInput(""); setOtpInput(""); }} className="p-1 text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
-              </button>
+              {verifyStep === "done" && (
+                <button onClick={() => { setShowExtractModal(false); setExtractProgress([]); }} className="p-1 text-gray-400 hover:text-gray-600">
+                  <X className="w-5 h-5" />
+                </button>
+              )}
             </div>
 
-            {verifyStep === "input" && (
-              <div>
-                <p className="text-sm text-gray-600 mb-4">
-                  Enter your 12-digit Aadhaar number. An OTP will be sent to your registered mobile number.
-                </p>
-                <div className="mb-4">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Aadhaar Number</label>
-                  <div className="relative">
-                    <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="text"
-                      value={aadhaarInput}
-                      onChange={(e) => setAadhaarInput(e.target.value.replace(/\D/g, "").replace(/(.{4})/g, "$1 ").trim())}
-                      placeholder="XXXX XXXX XXXX"
-                      maxLength={14}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 font-mono text-center text-lg tracking-widest"
-                    />
-                  </div>
-                  <p className="text-[10px] text-gray-400 mt-1">Demo: Use 4521 7890 3456 (Adarsh) or 8934 5612 7890 (Priya)</p>
-                </div>
-                <button
-                  onClick={handleVerifyAadhaar}
-                  disabled={aadhaarInput.replace(/\s/g, "").length !== 12}
-                  className="w-full py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  <Smartphone className="w-4 h-4" />
-                  Send OTP
-                </button>
-              </div>
-            )}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <p className="text-xs text-blue-700">
+                Connecting to {EXTRACTABLE_DOCS.length} government portals and extracting your verified documents...
+              </p>
+            </div>
 
-            {verifyStep === "otp" && (
-              <div>
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-                  <p className="text-sm text-green-800">{verifyMessage}</p>
+            <div className="space-y-1.5 mb-4 max-h-60 overflow-y-auto">
+              {extractProgress.map((msg, i) => (
+                <div key={i} className={`text-xs px-3 py-1.5 rounded-lg ${msg.startsWith("✅") ? "bg-green-50 text-green-700" : msg.startsWith("❌") ? "bg-red-50 text-red-700" : "bg-gray-50 text-gray-600"}`}>
+                  {msg}
                 </div>
-                <div className="mb-4">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Enter OTP</label>
-                  <input
-                    type="text"
-                    value={otpInput}
-                    onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ""))}
-                    placeholder="6-digit OTP"
-                    maxLength={6}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 font-mono text-center text-lg tracking-[0.5em]"
-                    autoFocus
-                  />
-                  <p className="text-[10px] text-gray-400 mt-1">Demo OTP: 123456</p>
+              ))}
+              {extracting && (
+                <div className="flex items-center gap-2 text-xs text-blue-600 px-3 py-1.5">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Connecting to next portal...
                 </div>
-                <button
-                  onClick={handleVerifyAadhaar}
-                  disabled={otpInput.length !== 6}
-                  className="w-full py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  <Shield className="w-4 h-4" />
-                  Verify & Extract Data
-                </button>
-              </div>
-            )}
-
-            {verifyStep === "verifying" && (
-              <div className="text-center py-8">
-                <Loader2 className="w-10 h-10 text-green-600 animate-spin mx-auto mb-4" />
-                <p className="text-sm text-gray-600">{verifyMessage}</p>
-              </div>
-            )}
+              )}
+            </div>
 
             {verifyStep === "done" && (
-              <div className="text-center py-4">
-                <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle2 className="w-8 h-8 text-green-600" />
-                </div>
-                <h4 className="text-lg font-bold text-green-800 mb-2">Aadhaar Verified!</h4>
-                <p className="text-sm text-gray-600 mb-4">{verifyMessage}</p>
-                {extractedData && (
-                  <div className="bg-gray-50 rounded-lg p-3 text-left mb-4">
-                    <p className="text-xs font-semibold text-gray-600 mb-2">Extracted Data:</p>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {Object.entries(extractedData).filter(([k]) => k !== "photo").map(([key, value]) => (
-                        <div key={key} className="text-xs">
-                          <span className="text-gray-500 capitalize">{key.replace(/([A-Z])/g, " $1")}: </span>
-                          <span className="font-medium text-gray-900">{String(value)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <button
-                  onClick={() => { setShowVerifyModal(false); window.location.reload(); }}
-                  className="px-6 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
-                >
-                  Continue
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Upload Modal */}
-      {showUploadModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Upload Document</h3>
-              <button onClick={() => setShowUploadModal(false)} className="p-1 text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
+              <button
+                onClick={() => { setShowExtractModal(false); setExtractProgress([]); window.location.reload(); }}
+                className="w-full py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+              >
+                View My Documents
               </button>
-            </div>
-            <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center mb-4">
-              <Camera className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm text-gray-600">Drag & drop or click to upload</p>
-              <p className="text-xs text-gray-400 mt-1">PDF, JPG, PNG up to 5MB</p>
-            </div>
-            <p className="text-xs text-gray-500 mb-2">Quick upload:</p>
-            <div className="grid grid-cols-2 gap-2">
-              {DOC_TYPES.filter((d) => !documents.some((doc) => doc.type === d.type)).map((docType) => (
-                <button
-                  key={docType.type}
-                  onClick={() => handleUpload(docType.type)}
-                  disabled={uploading}
-                  className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-xs text-left hover:border-[#FF9933] hover:bg-orange-50 transition-colors disabled:opacity-50"
-                >
-                  {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3 text-gray-400" />}
-                  {docType.name}
-                </button>
-              ))}
-            </div>
+            )}
           </div>
         </div>
       )}
@@ -777,7 +848,7 @@ export default function CitizenDocumentsPage() {
             </div>
 
             {/* Source & Status */}
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
               {(() => {
                 const src = SOURCE_CONFIG[selectedDoc.source];
                 const SrcIcon = src.icon;
@@ -794,13 +865,42 @@ export default function CitizenDocumentsPage() {
                   Aadhaar Linked
                 </span>
               )}
+              {selectedDoc.verificationId && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200">
+                  <BadgeCheck className="w-3.5 h-3.5" />
+                  ID: {selectedDoc.verificationId}
+                </span>
+              )}
             </div>
+
+            {/* Portal Source */}
+            {selectedDoc.portal && PORTAL_CONFIG[selectedDoc.portal] && (
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {(() => { const PIcon = PORTAL_CONFIG[selectedDoc.portal].icon; return <PIcon className="w-4 h-4 text-gray-600" />; })()}
+                    <div>
+                      <p className="text-xs font-medium text-gray-700">Extracted from {PORTAL_CONFIG[selectedDoc.portal].name}</p>
+                      <p className="text-[10px] text-gray-400">Official government portal</p>
+                    </div>
+                  </div>
+                  <a
+                    href={PORTAL_CONFIG[selectedDoc.portal].url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] px-2 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-200 hover:bg-blue-100 transition-colors flex items-center gap-1"
+                  >
+                    Visit Portal <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
+            )}
 
             {/* Extracted Data */}
             {selectedDoc.extractedData && Object.keys(selectedDoc.extractedData).length > 0 && (
               <div className="mb-4">
                 <p className="text-xs font-semibold text-gray-600 mb-2">
-                  {selectedDoc.source === "aadhaar" ? "Data Extracted from Aadhaar (UIDAI)" : "Extracted Data"}
+                  {selectedDoc.source === "aadhaar" ? "Data Extracted from Aadhaar (UIDAI)" : `Data Extracted from ${selectedDoc.portal && PORTAL_CONFIG[selectedDoc.portal] ? PORTAL_CONFIG[selectedDoc.portal].name : "Government Portal"}`}
                 </p>
                 <div className="bg-gray-50 rounded-lg p-3 space-y-1.5">
                   {Object.entries(selectedDoc.extractedData).filter(([, v]) => v && v !== "verified").map(([key, value]) => (
@@ -832,7 +932,7 @@ export default function CitizenDocumentsPage() {
                 <Download className="w-4 h-4" />
                 Download
               </button>
-              {selectedDoc.source !== "aadhaar" && (
+              {selectedDoc.source !== "aadhaar" && selectedDoc.source !== "extracted" && (
                 <button
                   onClick={() => handleDelete(selectedDoc.id)}
                   className="flex items-center justify-center gap-1 px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors"

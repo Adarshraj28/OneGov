@@ -21,6 +21,10 @@ import {
   Home,
   UtensilsCrossed,
   ScrollText,
+  Shield,
+  BadgeCheck,
+  ArrowRight,
+  Lock,
 } from "lucide-react";
 import { OFFICIAL_GOV_SERVICES } from "@/lib/mock-data";
 import { useLanguage } from "@/lib/language-context";
@@ -52,6 +56,7 @@ export default function CitizenHome() {
   const { t } = useLanguage();
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [stats, setStats] = useState({ total: 0, completed: 0, inProgress: 0, pending: 0 });
+  const [aadhaarVerified, setAadhaarVerified] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -60,6 +65,11 @@ export default function CitizenHome() {
         if (!data.user) router.push("/login");
       })
       .catch(() => router.push("/login"));
+
+    fetch("/api/verify/aadhaar")
+      .then((r) => r.json())
+      .then((data) => setAadhaarVerified(data.aadhaarVerified || false))
+      .catch(() => {});
 
     fetch("/api/journeys")
       .then((r) => r.json())
@@ -116,6 +126,35 @@ export default function CitizenHome() {
             <span className="w-8 h-1 rounded-full bg-[#138808]" />
           </div>
         </div>
+
+        {/* Verification Status Bar */}
+        {!aadhaarVerified && (
+          <div className="max-w-3xl mx-auto mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-4">
+            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
+              <Lock className="w-5 h-5 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-800">Verify your Aadhaar to unlock full functionality</p>
+              <p className="text-xs text-amber-600">Auto-extract documents, enable data reuse, and access all government services</p>
+            </div>
+            <a href="/citizen/documents" className="flex items-center gap-1 px-3 py-2 bg-amber-600 text-white rounded-lg text-xs font-medium hover:bg-amber-700 transition-colors shrink-0">
+              Verify Now <ArrowRight className="w-3 h-3" />
+            </a>
+          </div>
+        )}
+        {aadhaarVerified && (
+          <div className="max-w-3xl mx-auto mb-6 bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-4">
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
+              <Shield className="w-5 h-5 text-green-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-green-800 flex items-center gap-2">
+                Identity Verified <BadgeCheck className="w-4 h-4" />
+              </p>
+              <p className="text-xs text-green-600">Aadhaar verified — documents extracted from government portals, data reused across services</p>
+            </div>
+          </div>
+        )}
 
         {/* AI Chat Interface */}
         <div className="max-w-3xl mx-auto mb-12">
