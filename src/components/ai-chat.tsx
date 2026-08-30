@@ -14,6 +14,8 @@ import {
   Trash2,
   PanelLeftClose,
   PanelLeftOpen,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import AshokaChakra from "@/components/ashoka-chakra";
 
@@ -110,6 +112,7 @@ export default function AIChat({ onWorkflowCreated }: AIChatProps) {
   const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -410,7 +413,7 @@ export default function AIChat({ onWorkflowCreated }: AIChatProps) {
   };
 
   return (
-    <div className="flex h-full bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div className={`flex bg-white rounded-xl border border-gray-200 overflow-hidden ${fullscreen ? "fixed inset-0 z-50 rounded-none border-0" : "h-full"}`}>
       {/* Sidebar — Conversation History */}
       {sidebarOpen && (
         <div className="w-56 border-r border-gray-200 bg-gray-50 flex flex-col shrink-0">
@@ -476,13 +479,22 @@ export default function AIChat({ onWorkflowCreated }: AIChatProps) {
               <p className="text-[9px] text-blue-300">Government Service Assistant</p>
             </div>
           </div>
-          <button
-            onClick={createNewChat}
-            className="p-1.5 text-blue-200 hover:text-white hover:bg-white/10 rounded-md transition-colors"
-            title="New conversation"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={createNewChat}
+              className="p-1.5 text-blue-200 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+              title="New conversation"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setFullscreen(!fullscreen)}
+              className="p-1.5 text-blue-200 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+              title={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+            >
+              {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
 
         {/* Messages */}
