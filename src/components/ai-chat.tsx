@@ -122,8 +122,13 @@ export default function AIChat({ onWorkflowCreated }: AIChatProps) {
     }, 50);
   }, []);
 
+  // Only auto-scroll when a NEW message is added (not on initial load)
+  const prevMsgCountRef = useRef(0);
   useEffect(() => {
-    scrollToBottom();
+    if (messages.length > prevMsgCountRef.current && prevMsgCountRef.current > 0) {
+      scrollToBottom();
+    }
+    prevMsgCountRef.current = messages.length;
   }, [messages.length, scrollToBottom]);
 
   // Load conversations from localStorage
