@@ -15,6 +15,18 @@ export const metadata: Metadata = {
   description:
     "ONEGOV is India's unified government-service orchestration platform. One Request. Multiple Services. One Unified Journey. Digital India Initiative.",
   keywords: ["Digital India", "Government Services", "ONEGOV", "Aadhaar", "PAN", "Passport", "Driving License", "Voter ID"],
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon-32.png",
+    apple: "/images/onegov-icon-192.png",
+  },
+  manifest: "/manifest.json",
+  openGraph: {
+    title: "ONEGOV — Government Services, Connected Around You",
+    description: "India's unified government-service orchestration platform. Digital India Initiative.",
+    siteName: "ONEGOV",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
