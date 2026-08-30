@@ -581,9 +581,8 @@ export default function AIChat({ onWorkflowCreated }: AIChatProps) {
 
           {/* Loading indicator */}
           {loading && (
-            <div className="flex gap-3 justify-start">
-              <div className="w-7 h-7 bg-blue-900 rounded-lg flex items-center justify-center shrink-0">
-                <AshokaChakra size={18} />
+            <div className="flex gap-3 justify-start">              <div className="w-7 h-7 bg-blue-900 rounded-lg flex items-center justify-center shrink-0">
+                <img src="/images/onegov-logo.png" alt="ONEGOV" className="w-5 h-5 object-contain" />
               </div>
               <div className="bg-gray-100 rounded-xl rounded-tl-sm px-4 py-3">
                 <div className="flex items-center gap-2">

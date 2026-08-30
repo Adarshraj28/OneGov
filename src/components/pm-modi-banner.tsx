@@ -1,7 +1,6 @@
 "use client";
 
 import { useLanguage } from "@/lib/language-context";
-import GovEmblem from "@/components/gov-emblem";
 import AshokaChakra from "@/components/ashoka-chakra";
 
 interface PMModiBannerProps {
@@ -23,11 +22,15 @@ export default function PMModiBanner({ variant = "full" }: PMModiBannerProps) {
 
         <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row items-center gap-6">
-            {/* Government Emblem */}
+            {/* PM Modi Photo */}
             <div className="relative shrink-0">
               <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-[#FF9933] via-white to-[#138808] p-1">
-                <div className="w-full h-full rounded-full overflow-hidden bg-white flex items-center justify-center">
-                  <GovEmblem size={90} />
+                <div className="w-full h-full rounded-full overflow-hidden bg-white">
+                  <img
+                    src="/images/pm-modi.jpg"
+                    alt="Prime Minister Narendra Modi"
+                    className="w-full h-full object-cover object-top"
+                  />
                 </div>
               </div>
               {/* Ashoka Chakra badge */}
@@ -76,8 +79,12 @@ export default function PMModiBanner({ variant = "full" }: PMModiBannerProps) {
       <div className="bg-gradient-to-r from-blue-900 to-blue-800 rounded-xl p-4 border border-blue-700">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FF9933] via-white to-[#138808] p-0.5 shrink-0">
-            <div className="w-full h-full rounded-full overflow-hidden bg-white flex items-center justify-center">
-              <GovEmblem size={36} />
+            <div className="w-full h-full rounded-full overflow-hidden bg-white">
+              <img
+                src="/images/pm-modi.jpg"
+                alt="Prime Minister Narendra Modi"
+                className="w-full h-full object-cover object-top"
+              />
             </div>
           </div>
           <div>
@@ -106,8 +113,12 @@ export default function PMModiBanner({ variant = "full" }: PMModiBannerProps) {
       <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 p-5">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#FF9933] via-white to-[#138808] p-0.5 shrink-0">
-            <div className="w-full h-full rounded-full overflow-hidden bg-white flex items-center justify-center">
-              <GovEmblem size={56} />
+            <div className="w-full h-full rounded-full overflow-hidden bg-white">
+              <img
+                src="/images/pm-modi.jpg"
+                alt="Prime Minister Narendra Modi"
+                className="w-full h-full object-cover object-top"
+              />
             </div>
           </div>
           <div>

@@ -41,6 +41,8 @@ export default function Header() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [recentNotifications, setRecentNotifications] = useState<Array<{id: string; title: string; message: string; read: boolean; source?: string; createdAt: string}>>([]);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -54,6 +56,12 @@ export default function Header() {
     fetch("/api/notifications?count=true")
       .then((r) => r.json())
       .then((data) => setUnreadCount(data.count || 0))
+      .catch(() => {});
+
+    // Fetch recent notifications for dropdown
+    fetch("/api/notifications")
+      .then((r) => r.json())
+      .then((data) => setRecentNotifications((data.notifications || []).slice(0, 5)))
       .catch(() => {});
   }, [router]);
 
@@ -125,9 +133,20 @@ export default function Header() {
           {/* Logo */}
           <Link
             href={user.role === "admin" ? "/admin" : user.role === "officer" ? "/officer" : "/citizen"}
-            className="flex items-center gap-2 shrink-0"
+            className="flex items-center gap-2.5 shrink-0"
           >
-            <div className="w-9 h-9 bg-gradient-to-br from-[#FF9933] via-white to-[#138808] rounded-lg p-0.5">
+            <img
+              src="/images/onegov-logo.png"
+              alt="ONEGOV"
+              className="w-10 h-10 rounded-lg object-contain"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const fallback = target.nextElementSibling as HTMLElement;
+                if (fallback) fallback.style.display = 'flex';
+              }}
+            />
+            <div className="w-10 h-10 bg-gradient-to-br from-[#FF9933] via-white to-[#138808] rounded-lg p-0.5 hidden">
               <div className="w-full h-full bg-blue-900 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">OG</span>
               </div>
@@ -171,17 +190,67 @@ export default function Header() {
             <LanguageSwitcher />
 
             {/* Notifications */}
-            <Link
-              href="/citizen/notifications"
-              className="relative p-1.5 text-gray-400 hover:text-[#FF9933] rounded-md hover:bg-[#FF9933]/10 transition-colors"
-            >
-              <Bell className="w-5 h-5" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-[#FF9933] text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
+            <div className="relative">
+              <button
+                onClick={() => setNotificationsOpen(!notificationsOpen)}
+                className="relative p-1.5 text-gray-400 hover:text-[#FF9933] rounded-md hover:bg-[#FF9933]/10 transition-colors"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-[#FF9933] text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {notificationsOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setNotificationsOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50 py-1 max-h-96 overflow-hidden">
+                    <div className="px-3 py-2.5 border-b border-gray-100 flex items-center justify-between">
+                      <p className="text-sm font-semibold text-gray-900">Notifications</p>
+                      <div className="flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                        <span className="text-[9px] text-gray-400">Live</span>
+                      </div>
+                    </div>
+                    <div className="overflow-y-auto max-h-72">
+                      {recentNotifications.length === 0 ? (
+                        <div className="px-3 py-6 text-center text-xs text-gray-400">
+                          No notifications yet
+                        </div>
+                      ) : (
+                        recentNotifications.map((n) => (
+                          <div
+                            key={n.id}
+                            className={`px-3 py-2.5 border-b border-gray-50 hover:bg-gray-50 transition-colors ${!n.read ? "bg-blue-50/30" : ""}`}
+                          >
+                            <div className="flex items-start gap-2">
+                              {!n.read && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 shrink-0" />}
+                              <div className="min-w-0 flex-1">
+                                <p className={`text-xs font-medium ${!n.read ? "text-gray-900" : "text-gray-600"}`}>{n.title}</p>
+                                <p className="text-[10px] text-gray-500 truncate mt-0.5">{n.message}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <p className="text-[9px] text-gray-400">{new Date(n.createdAt).toLocaleString("en-IN", { hour: "2-digit", minute: "2-digit" })}</p>
+                                  {n.source && <span className="text-[9px] px-1 py-0.5 bg-gray-100 text-gray-500 rounded">{n.source}</span>}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <Link
+                      href="/citizen/notifications"
+                      className="block text-center text-xs font-medium text-[#FF9933] hover:text-[#e88a2d] py-2.5 border-t border-gray-100 hover:bg-gray-50"
+                      onClick={() => setNotificationsOpen(false)}
+                    >
+                      View All Notifications →
+                    </Link>
+                  </div>
+                </>
               )}
-            </Link>
+            </div>
 
             {/* Profile Dropdown */}
             <div className="relative">
