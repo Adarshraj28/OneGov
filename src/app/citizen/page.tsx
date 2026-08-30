@@ -237,20 +237,41 @@ export default function CitizenHome() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {OFFICIAL_GOV_SERVICES.map((service) => {
               const Icon = ICON_MAP[service.icon] || FileText;
+              // Map service names to working action URLs
+              const serviceUrls: Record<string, string> = {
+                "Aadhaar Card": "https://uidai.gov.in",
+                "PAN Card": "https://www.onlineservices.nsdl.com",
+                "Passport": "https://www.passportindia.gov.in",
+                "Driving License": "https://parivahan.gov.in",
+                "Voter ID": "https://www.nvsp.in",
+                "Birth Certificate": "/citizen",
+                "Income Certificate": "/citizen",
+                "Property Registration": "/citizen",
+                "Ration Card": "/citizen",
+                "Caste Certificate": "/citizen",
+              };
+              const url = serviceUrls[service.name] || "/citizen";
+              const isExternal = url.startsWith("http");
               return (
-                <div
+                <a
                   key={service.name}
-                  className="bg-white rounded-xl border border-gray-200 p-4 text-center hover:shadow-md hover:border-[#FF9933]/50 transition-all cursor-pointer group"
+                  href={url}
+                  target={isExternal ? "_blank" : undefined}
+                  rel={isExternal ? "noopener noreferrer" : undefined}
+                  className="bg-white rounded-xl border border-gray-200 p-4 text-center hover:shadow-md hover:border-[#FF9933]/50 transition-all cursor-pointer group block"
                 >
                   <div
                     className={`w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center bg-${service.color}-50 group-hover:scale-110 transition-transform`}
                   >
                     <Icon className={`w-6 h-6 text-${service.color}-600`} />
                   </div>
-                  <p className="text-sm font-medium text-gray-900">{service.name}</p>
+                  <p className="text-sm font-medium text-gray-900 group-hover:text-[#FF9933] transition-colors">{service.name}</p>
                   <p className="text-xs text-gray-500 mt-1">{service.department}</p>
                   <p className="text-[10px] text-gray-400 mt-2 leading-tight">{service.description}</p>
-                </div>
+                  <span className="inline-block mt-2 text-[10px] text-[#FF9933] font-medium">
+                    {isExternal ? "Visit Portal →" : "Start Journey →"}
+                  </span>
+                </a>
               );
             })}
           </div>
