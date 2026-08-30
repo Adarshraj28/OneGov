@@ -57,13 +57,13 @@ const INTENT_PATTERNS: IntentPattern[] = [
   {
     intent: "START_BUSINESS",
     patterns: [
-      /(?:open|start|begin|launch)\s+(?:a\s+)?(?:new\s+)?(?:small\s+)?(?:\w+\s+)?business/i,
-      /(?:want|plan|looking)\s+to\s+(?:start|open|begin)\s+(?:a\s+)?(?:new\s+)?(?:small\s+)?(?:\w+\s+)?business/i,
-      /(?:start|open)\s+(?:a\s+)?(?:new\s+)?(?:\w+\s+)?(?:shop|store|firm|enterprise|company)/i,
+      /(?:open|start|begin|launch)\s+(?:a\s+)?(?:new\s+)?(?:small\s+)?(?:\w+\s+)?(?:business|startup|venture)/i,
+      /(?:want|plan|looking)\s+to\s+(?:start|open|begin|launch)\s+(?:a\s+)?(?:new\s+)?(?:small\s+)?(?:\w+\s+)?(?:business|startup|venture)/i,
+      /(?:start|open|launch)\s+(?:a\s+)?(?:new\s+)?(?:\w+\s+)?(?:shop|store|firm|enterprise|company)/i,
       /business\s+(?:registration|setup|incorporation)/i,
       /register\s+(?:my\s+)?(?:new\s+)?business/i,
     ],
-    keywords: ["business", "startup", "company", "firm", "enterprise", "shop", "store", "trade"],
+    keywords: ["business", "startup", "company", "firm", "enterprise", "shop", "store", "trade", "venture"],
     requiredContext: ["location", "businessType"],
     weight: 0.8,
   },
@@ -353,8 +353,8 @@ function classifyIntent(text: string): { intent: IntentCategory; confidence: num
       // Regex match is a strong signal — base 0.6, add for keywords
       confidence = Math.min(0.6 + keywordHits * 0.08, 0.98) * pattern.weight;
     } else {
-      // Only keyword matches — weaker signal
-      confidence = Math.min(keywordHits * 0.12, 0.7) * pattern.weight;
+      // Only keyword matches — weaker signal but still useful
+      confidence = Math.min(keywordHits * 0.18, 0.75) * pattern.weight;
     }
 
     if (confidence > bestMatch.confidence && confidence > 0.15) {
@@ -493,9 +493,10 @@ export class MockAIProvider implements AIProvider {
       };
     }
 
-    // Check for confirmation responses
-    const confirmationPatterns = /^(yes|yeah|yep|correct|right|sure|ok|okay|proceed|go ahead|looks good|that's right|confirm)/i;
-    const denialPatterns = /^(no|nah|nope|wrong|incorrect|cancel|back|change)/i;
+    // Check for confirmation responses (flexible — match anywhere in text)
+    // Note: do NOT include 'start' or 'begin' here — they appear in regular requests
+    const confirmationPatterns = /\b(yes|yeah|yep|correct|right|sure|ok|okay|proceed|go ahead|looks good|that's right|confirm|continue|lets go|let's go)\b/i;
+    const denialPatterns = /\b(no|nah|nope|wrong|incorrect|cancel|back|change|restart|reset)\b/i;
 
     if (confirmationPatterns.test(userText.trim())) {
       return this.handleConfirmation(context);
@@ -825,6 +826,21 @@ export class MockAIProvider implements AIProvider {
             "What documents do I need?",
             "Show me my progress",
           ],
+        },
+      };
+    }
+
+    // If workflow already generated, user wants to start the journey
+    if (
+      context.stage === "workflow_generated" &&
+      context.currentIntent
+    ) {
+      return {
+        type: "message",
+        content: `Your workflow is ready! You can start with **Step 1** by clicking **\"Start Your Journey\"** on the workflow card above, or navigate to your journey dashboard.\n\nEach step will guide you through the required documents, information, and submission process.\n\nWould you like me to walk you through any specific step?`,
+        metadata: {
+          intent: context.currentIntent,
+          entities: context.collectedEntities,
         },
       };
     }
